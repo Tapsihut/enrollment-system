@@ -1,0 +1,65 @@
+:root {
+
+    /* SFXC Main Colors */
+
+    --sfxc-primary: #0B6B3A;      /* Main Green */
+    --sfxc-secondary: #198754;    /* Accent Green */
+    --sfxc-dark-green: #064E2A;   /* Dark Green */
+
+    --sfxc-light: #F3F8F5;        /* Light Background */
+
+    --sfxc-gold: #D4AF37;         /* Optional accent */
+
+    --sfxc-dark: #1F2937;
+
+    --sfxc-white: #FFFFFF;
+
+
+    /* Status Colors */
+
+    --success: #198754;
+    --danger: #DC3545;
+    --warning: #FFC107;
+
+    .btn-sfxc{
+
+background:var(--sfxc-primary);
+
+color:white;
+
+border:none;
+
+}
+
+
+.btn-sfxc:hover{
+
+background:var(--sfxc-dark-green);
+
+color:white;
+
+}
+
+
+.text-sfxc{
+
+color:var(--sfxc-primary);
+
+}
+
+
+.bg-sfxc{
+
+background:var(--sfxc-primary);
+
+color:white;
+
+}
+
+
+.border-sfxc{
+
+border-color:var(--sfxc-primary)!important;
+
+}
+}

@@ -1,0 +1,46 @@
+body{
+    background:#f4f6f9;
+    font-family:Segoe UI,Tahoma,Geneva,Verdana,sans-serif;
+}
+
+.sidebar{
+    width:260px;
+    min-height:100vh;
+    background:#0d6efd;
+    color:white;
+}
+
+.sidebar a{
+    display:block;
+    color:white;
+    padding:14px 20px;
+    text-decoration:none;
+}
+
+.sidebar a:hover{
+    background:rgba(255,255,255,.15);
+}
+
+.content{
+    padding:25px;
+}
+
+.dashboard-card{
+    border:none;
+    border-radius:15px;
+    box-shadow:0 5px 15px rgba(0,0,0,.08);
+}
+
+.page-title{
+    font-weight:bold;
+    margin-bottom:25px;
+}
+
+.logo{
+    width:70px;
+}
+
+.banner{
+    width:100%;
+    border-radius:15px;
+}
