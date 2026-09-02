@@ -19,6 +19,8 @@
     use App\Http\Controllers\Api\DocumentController;
     use App\Http\Controllers\Api\RegistrarReportController;
     use App\Http\Controllers\Api\CashierController;
+    use App\Http\Controllers\Api\AcademicPeriodController;
+    
 
 
 
@@ -343,6 +345,67 @@
                 '/reports/assessment',
                 [RegistrarReportController::class, 'assessmentReport']
             );
+
+                    /*
+        |--------------------------------------------------------------------------
+        | Academic Period Management
+        |--------------------------------------------------------------------------
+        */
+
+        // Get all academic years
+        Route::get(
+            '/academic-years',
+            [SchoolYearController::class, 'index']
+        );
+
+
+        // Get active academic year
+        Route::get(
+            '/academic-years/active',
+            [SchoolYearController::class, 'active']
+        );
+
+
+        // Activate academic year
+        Route::post(
+            '/academic-years/{id}/activate',
+            [SchoolYearController::class, 'activate']
+        );
+
+
+        // Get all semesters
+        Route::get(
+            '/semesters',
+            [SemesterController::class, 'index']
+        );
+
+
+        // Get active semester
+        Route::get(
+            '/semesters/active',
+            [SemesterController::class, 'active']
+        );
+
+
+        // Activate semester
+        Route::post(
+            '/semesters/{id}/activate',
+            [SemesterController::class, 'activate']
+        );
+
+
+        // Get current active academic period
+        Route::get(
+            '/active-period',
+            [AcademicPeriodController::class, 'active']
+        );
+
+
+        // Set active academic year + semester
+        Route::post(
+            '/active-period',
+            [AcademicPeriodController::class, 'setActive']
+        );
 
 
 

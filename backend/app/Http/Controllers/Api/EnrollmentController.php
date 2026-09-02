@@ -334,7 +334,6 @@ AcademicBackground::updateOrCreate(
             'semester_id'    => $request->semester_id,
             'year_level'     => $request->year_level,
             'status'=>'Pending',
-            'payment_status'=>'Unpaid',
 
             ]);
 /*
@@ -466,6 +465,269 @@ foreach($documents as $document){
 
 
     }
+    /*
+|--------------------------------------------------------------------------
+| APPROVE ENROLLMENT
+|--------------------------------------------------------------------------
+*/
+
+public function approve($id)
+{
+    try {
+
+        $enrollment = Enrollment::findOrFail($id);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Only Pending Applications Can Be Approved
+        |--------------------------------------------------------------------------
+        */
+
+        if ($enrollment->status !== 'Pending') {
+
+            return response()->json([
+
+                'success' => false,
+
+                'message' => 'Only pending enrollment applications can be approved.'
+
+            ], 422);
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Approve Enrollment
+        |--------------------------------------------------------------------------
+        */
+
+        $enrollment->update([
+
+            'status' => 'Approved',
+
+            // Clear any previous rejection information
+            'rejection_reason' => null,
+
+            'rejected_at' => null,
+
+        ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Return Updated Enrollment
+        |--------------------------------------------------------------------------
+        */
+
+        $enrollment->load([
+
+            'student',
+
+            'course',
+
+            'curriculum',
+
+            'schoolYear',
+
+            'semester',
+
+        ]);
+
+
+        return response()->json([
+
+            'success' => true,
+
+            'message' => 'Enrollment approved successfully.',
+
+            'enrollment' => $enrollment,
+
+        ]);
+
+
+    } catch (\Throwable $e) {
+
+        Log::error('Approve Enrollment Error', [
+
+            'message' => $e->getMessage(),
+
+            'file' => $e->getFile(),
+
+            'line' => $e->getLine(),
+
+        ]);
+
+
+        return response()->json([
+
+            'success' => false,
+
+            'message' => 'Unable to approve enrollment.',
+
+        ], 500);
+
+    }
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| REJECT ENROLLMENT
+|--------------------------------------------------------------------------
+*/
+
+public function reject(Request $request, $id)
+{
+    /*
+    |--------------------------------------------------------------------------
+    | Validate Rejection Reason
+    |--------------------------------------------------------------------------
+    */
+
+    $request->validate([
+
+        'rejection_reason' => [
+            'required',
+            'string',
+            'min:5',
+            'max:5000'
+        ],
+
+    ], [
+
+        'rejection_reason.required' =>
+            'Please provide a reason for rejecting this enrollment.',
+
+        'rejection_reason.min' =>
+            'The rejection reason must be at least 5 characters.',
+
+        'rejection_reason.max' =>
+            'The rejection reason cannot exceed 5000 characters.',
+
+    ]);
+
+
+    try {
+
+        /*
+        |--------------------------------------------------------------------------
+        | Find Enrollment
+        |--------------------------------------------------------------------------
+        */
+
+        $enrollment = Enrollment::findOrFail($id);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Only Pending Applications Can Be Rejected
+        |--------------------------------------------------------------------------
+        */
+
+        if ($enrollment->status !== 'Pending') {
+
+            return response()->json([
+
+                'success' => false,
+
+                'message' =>
+                    'Only pending enrollment applications can be rejected.'
+
+            ], 422);
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Reject Enrollment
+        |--------------------------------------------------------------------------
+        */
+
+        $enrollment->update([
+
+            'status' => 'Rejected',
+
+            'rejection_reason' =>
+                $request->rejection_reason,
+
+            'rejected_at' => now(),
+
+        ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Load Relationships
+        |--------------------------------------------------------------------------
+        */
+
+        $enrollment->load([
+
+            'student',
+
+            'course',
+
+            'curriculum',
+
+            'schoolYear',
+
+            'semester',
+
+        ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Return Response
+        |--------------------------------------------------------------------------
+        */
+
+        return response()->json([
+
+            'success' => true,
+
+            'message' =>
+                'Enrollment rejected successfully.',
+
+            'enrollment' => $enrollment,
+
+        ]);
+
+
+    } catch (\Throwable $e) {
+
+        /*
+        |--------------------------------------------------------------------------
+        | Log Error
+        |--------------------------------------------------------------------------
+        */
+
+        Log::error('Reject Enrollment Error', [
+
+            'message' => $e->getMessage(),
+
+            'file' => $e->getFile(),
+
+            'line' => $e->getLine(),
+
+            'trace' => $e->getTraceAsString(),
+
+        ]);
+
+
+        return response()->json([
+
+            'success' => false,
+
+            'message' =>
+                'Unable to reject enrollment.',
+
+        ], 500);
+
+    }
+}
     public function payment()
 {
     return $this->hasOne(

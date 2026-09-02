@@ -10,6 +10,10 @@ class SchoolYear extends Model
 
     protected $fillable = [
         'school_year',
-        'status'
+        'is_active'
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
     ];
 }

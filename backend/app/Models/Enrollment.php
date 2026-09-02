@@ -13,88 +13,161 @@ use App\Models\AcademicBackground;
 use App\Models\StudentDocument;
 use App\Models\Payment;
 use App\Models\Subject;
+
 class Enrollment extends Model
 {
-
     protected $fillable = [
-
         'student_id',
         'course_id',
         'curriculum_id',
         'school_year_id',
         'semester_id',
         'year_level',
-        'status'
-
+        'status',
+        'payment_status',
+        'rejection_reason',
+        'rejected_at',
     ];
 
 
-
-   public function student()
-{
-    return $this->belongsTo(Student::class);
-}
+    protected $casts = [
+        'rejected_at' => 'datetime',
+    ];
 
 
-public function course()
-{
-    return $this->belongsTo(Course::class);
-}
+    /*
+    |--------------------------------------------------------------------------
+    | Student
+    |--------------------------------------------------------------------------
+    */
+
+    public function student()
+    {
+        return $this->belongsTo(Student::class);
+    }
 
 
-public function curriculum()
-{
-    return $this->belongsTo(Curriculum::class);
-}
+    /*
+    |--------------------------------------------------------------------------
+    | Course
+    |--------------------------------------------------------------------------
+    */
+
+    public function course()
+    {
+        return $this->belongsTo(Course::class);
+    }
 
 
-public function schoolYear()
-{
-    return $this->belongsTo(SchoolYear::class);
-}
+    /*
+    |--------------------------------------------------------------------------
+    | Curriculum
+    |--------------------------------------------------------------------------
+    */
+
+    public function curriculum()
+    {
+        return $this->belongsTo(Curriculum::class);
+    }
 
 
-public function semester()
-{
-    return $this->belongsTo(Semester::class);
-}
+    /*
+    |--------------------------------------------------------------------------
+    | School Year
+    |--------------------------------------------------------------------------
+    */
 
-public function guardian()
-{
-    return $this->hasOne(
-        Guardian::class,
-        'student_id',
-        'student_id'
-    );
-}
+    public function schoolYear()
+    {
+        return $this->belongsTo(SchoolYear::class);
+    }
 
-public function academicBackground()
-{
-    return $this->hasOne(
-        AcademicBackground::class,
-        'student_id',
-        'student_id'
-    );
-}
-public function documents()
-{
-    return $this->hasMany(
-        StudentDocument::class,
-        'student_id',
-        'student_id'
-    );
-}
-public function payment()
-{
-    return $this->hasOne(
-        Payment::class
-    );
-}
-public function subjects()
-{
-    return $this->belongsToMany(
-        Subject::class,
-        'enrollment_subjects'
-    );
-}
+
+    /*
+    |--------------------------------------------------------------------------
+    | Semester
+    |--------------------------------------------------------------------------
+    */
+
+    public function semester()
+    {
+        return $this->belongsTo(Semester::class);
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Guardian
+    |--------------------------------------------------------------------------
+    */
+
+    public function guardian()
+    {
+        return $this->hasOne(
+            Guardian::class,
+            'student_id',
+            'student_id'
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Academic Background
+    |--------------------------------------------------------------------------
+    */
+
+    public function academicBackground()
+    {
+        return $this->hasOne(
+            AcademicBackground::class,
+            'student_id',
+            'student_id'
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Documents
+    |--------------------------------------------------------------------------
+    */
+
+    public function documents()
+    {
+        return $this->hasMany(
+            StudentDocument::class,
+            'student_id',
+            'student_id'
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Payment
+    |--------------------------------------------------------------------------
+    */
+
+    public function payment()
+    {
+        return $this->hasOne(
+            Payment::class
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Subjects
+    |--------------------------------------------------------------------------
+    */
+
+    public function subjects()
+    {
+        return $this->belongsToMany(
+            Subject::class,
+            'enrollment_subjects'
+        );
+    }
 }

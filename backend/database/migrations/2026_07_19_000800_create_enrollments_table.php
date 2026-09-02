@@ -7,55 +7,50 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.  
+     * Run the migrations.
      */
     public function up(): void
     {
-Schema::create('enrollments', function (Blueprint $table) {
+        Schema::create('enrollments', function (Blueprint $table) {
 
-    $table->id();
+            $table->id();
 
+            $table->foreignId('student_id')
+                ->constrained('students')
+                ->cascadeOnDelete();
 
-    $table->foreignId('student_id')
-        ->constrained('students')
-        ->cascadeOnDelete();
+            $table->foreignId('course_id')
+                ->constrained('courses')
+                ->cascadeOnDelete();
 
+            $table->foreignId('curriculum_id')
+                ->constrained('curricula')
+                ->cascadeOnDelete();
 
-    $table->foreignId('course_id')
-        ->constrained('courses')
-        ->cascadeOnDelete();
+            $table->foreignId('school_year_id')
+                ->constrained('school_years')
+                ->cascadeOnDelete();
 
+            $table->foreignId('semester_id')
+                ->constrained('semesters')
+                ->cascadeOnDelete();
 
-    $table->foreignId('curriculum_id')
-        ->constrained('curricula')
-        ->cascadeOnDelete();
+            $table->integer('year_level');
 
+            $table->enum('status', [
+                'Pending',
+                'Approved',
+                'Rejected',
+                'Paid',
+                'Enrolled'
+            ])->default('Pending');
 
-    $table->foreignId('school_year_id')
-        ->constrained('school_years')
-        ->cascadeOnDelete();
+            // Rejection information
+            $table->text('rejection_reason')->nullable();
+            $table->timestamp('rejected_at')->nullable();
 
-
-    $table->foreignId('semester_id')
-        ->constrained('semesters')
-        ->cascadeOnDelete();
-
-
-    $table->integer('year_level');
-
-
-    $table->enum('status',[
-        'Pending',
-        'Approved',
-        'Rejected',
-        'Paid',
-        'Enrolled'
-    ])->default('Pending');
-
-
-    $table->timestamps();
-
-});
+            $table->timestamps();
+        });
     }
 
     /**

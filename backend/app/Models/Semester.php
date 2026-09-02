@@ -8,6 +8,10 @@ class Semester extends Model
 {
     protected $fillable = [
         'semester_name',
-        'status'
+        'is_active'
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
     ];
 }
