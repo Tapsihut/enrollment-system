@@ -261,12 +261,134 @@ const progress = computed(()=>{
 
 // NAVIGATION
 
-function next(){
+function next() {
 
-    if(step.value < 6){
+    let errors = []
 
+    // STEP 1 - PERSONAL INFORMATION
+    if (step.value === 1) {
+
+        if (!form.value.student_type)
+            errors.push("Student Type")
+
+        if (!form.value.first_name)
+            errors.push("First Name")
+
+        if (!form.value.last_name)
+            errors.push("Last Name")
+
+        if (!form.value.birth_date)
+            errors.push("Birth Date")
+
+        if (!form.value.gender)
+            errors.push("Gender")
+
+        if (!form.value.civil_status)
+            errors.push("Civil Status")
+
+        if (!form.value.nationality)
+            errors.push("Nationality")
+
+        if (!form.value.address)
+            errors.push("Address")
+
+        if (!form.value.contact_number)
+            errors.push("Contact Number")
+
+        if (!form.value.email)
+            errors.push("Email")
+    }
+
+
+    // STEP 2 - GUARDIAN
+    if (step.value === 2) {
+
+        if (!form.value.guardian_name)
+            errors.push("Guardian Name")
+
+        if (!form.value.guardian_relationship)
+            errors.push("Guardian Relationship")
+
+        if (!form.value.guardian_contact)
+            errors.push("Guardian Contact")
+
+        if (!form.value.guardian_address)
+            errors.push("Guardian Address")
+    }
+
+
+    // STEP 3 - ACADEMIC
+    if (step.value === 3) {
+
+        if (!form.value.last_school)
+            errors.push("Last School")
+
+        if (!form.value.school_address)
+            errors.push("School Address")
+
+        if (!form.value.graduation_year)
+            errors.push("Graduation Year")
+
+        if (!form.value.gwa)
+            errors.push("GWA")
+    }
+
+
+    // STEP 4 - DOCUMENTS
+    if (step.value === 4) {
+
+        if (!form.value.psa_birth_certificate)
+            errors.push("PSA Birth Certificate")
+
+        if (!form.value.good_moral)
+            errors.push("Good Moral Certificate")
+
+        if (!form.value.academic_document)
+            errors.push("Academic Document")
+
+        if (!form.value.id_picture)
+            errors.push("2x2 ID Picture")
+    }
+
+
+    // STEP 5 - ENROLLMENT
+    if (step.value === 5) {
+
+        if (!form.value.school_year_id)
+            errors.push("School Year")
+
+        if (!form.value.semester_id)
+            errors.push("Semester")
+
+        if (!form.value.course_id)
+            errors.push("Course")
+
+        if (!form.value.curriculum_id)
+            errors.push("Curriculum")
+
+        if (!form.value.year_level)
+            errors.push("Year Level")
+    }
+
+
+    // SHOW ERROR
+    if (errors.length > 0) {
+
+        showAlert(
+            "error",
+            "Please complete the following required fields: " + errors.join(", ")
+        )
+
+        scrollToTop()
+
+        return
+    }
+
+
+    // GO TO NEXT STEP
+    if (step.value < 6) {
         step.value++
-
+        scrollToTop()
     }
 
 }

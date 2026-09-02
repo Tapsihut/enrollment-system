@@ -2,6 +2,55 @@
 
 <div class="page">
 
+    <!-- PAGE ALERT -->
+
+    <transition name="alert">
+
+        <div
+            v-if="alertMessage"
+            class="page-alert"
+            :class="`alert-${alertType}`"
+        >
+
+            <div class="alert-icon">
+
+                <i
+                    class="bi"
+                    :class="
+                        alertType === 'success'
+                            ? 'bi-check-circle-fill'
+                            : 'bi-exclamation-circle-fill'
+                    "
+                ></i>
+
+            </div>
+
+            <div class="alert-content">
+
+                <strong>
+                    {{ alertType === "success" ? "Success" : "Error" }}
+                </strong>
+
+                <span>
+                    {{ alertMessage }}
+                </span>
+
+            </div>
+
+            <button
+                class="alert-close"
+                @click="clearAlert"
+            >
+
+                <i class="bi bi-x"></i>
+
+            </button>
+
+        </div>
+
+    </transition>
+
+
     <!-- HEADER -->
 
     <div class="page-header">
@@ -28,6 +77,237 @@
             Add Curriculum
 
         </button>
+
+    </div>
+
+
+    <!-- ACTIVE ACADEMIC PERIOD -->
+
+    <div class="card active-period-card">
+
+        <div class="card-body">
+
+            <div class="active-period-header">
+
+                <div>
+
+                    <div class="section-title">
+
+                        <i class="bi bi-calendar2-week-fill"></i>
+
+                        Academic Period
+
+                    </div>
+
+                    <p class="description">
+
+                        Select the academic year and semester that
+                        should currently be active for enrollment.
+
+                    </p>
+
+                </div>
+
+
+                <div
+                    v-if="activePeriod"
+                    class="active-period-badge"
+                >
+
+                    <span class="active-dot"></span>
+
+                    Active
+
+                </div>
+
+            </div>
+
+
+            <div class="row g-4 mt-1">
+
+                <!-- ACADEMIC YEAR -->
+
+                <div class="col-md-5">
+
+                    <label>
+                        Academic Year
+                    </label>
+
+                    <select
+                        class="form-select"
+                        v-model="selectedAcademicYear"
+                        :disabled="
+                            loadingAcademicPeriod ||
+                            savingAcademicPeriod
+                        "
+                    >
+
+                        <option value="">
+                            Select Academic Year
+                        </option>
+
+                        <option
+                            v-for="schoolYear in schoolYears"
+                            :key="schoolYear.id"
+                            :value="schoolYear.id"
+                        >
+
+                            {{ getSchoolYearName(schoolYear) }}
+
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- SEMESTER -->
+
+                <div class="col-md-4">
+
+                    <label>
+                        Semester
+                    </label>
+
+                    <select
+                        class="form-select"
+                        v-model="selectedSemester"
+                        :disabled="
+                            loadingAcademicPeriod ||
+                            savingAcademicPeriod
+                        "
+                    >
+
+                        <option value="">
+                            Select Semester
+                        </option>
+
+                        <option
+                            v-for="semester in semesters"
+                            :key="semester.id"
+                            :value="semester.id"
+                        >
+
+                            {{ getSemesterName(semester) }}
+
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- BUTTON -->
+
+                <div class="col-md-3 period-button-wrapper">
+
+                    <button
+                        class="btn-primary btn-active-period"
+                        @click="setActivePeriod"
+                        :disabled="
+                            !selectedAcademicYear ||
+                            !selectedSemester ||
+                            savingAcademicPeriod
+                        "
+                    >
+
+                        <i
+                            class="bi"
+                            :class="
+                                savingAcademicPeriod
+                                    ? 'bi-hourglass-split'
+                                    : 'bi-check-circle'
+                            "
+                        ></i>
+
+                        {{
+                            savingAcademicPeriod
+                                ? "Saving..."
+                                : "Set as Active"
+                        }}
+
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- CURRENT ACTIVE PERIOD -->
+
+            <div
+                v-if="activePeriod"
+                class="current-period"
+            >
+
+                <div class="current-period-icon">
+
+                    <i class="bi bi-calendar-check"></i>
+
+                </div>
+
+
+                <div class="current-period-info">
+
+                    <span class="current-period-label">
+                        Current Active Period
+                    </span>
+
+                    <strong>
+
+                        {{ activeAcademicYearName }}
+
+                        <span class="separator">
+                            •
+                        </span>
+
+                        {{ activeSemesterName }}
+
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <!-- NO ACTIVE PERIOD -->
+
+            <div
+                v-else-if="!loadingAcademicPeriod"
+                class="no-active-period"
+            >
+
+                <i class="bi bi-exclamation-circle"></i>
+
+                <div>
+
+                    <strong>
+                        No active academic period
+                    </strong>
+
+                    <span>
+                        Select an academic year and semester above.
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- LOADING -->
+
+            <div
+                v-if="loadingAcademicPeriod"
+                class="period-loading"
+            >
+
+                <div class="spinner"></div>
+
+                Loading academic period...
+
+            </div>
+
+        </div>
 
     </div>
 
@@ -292,33 +572,19 @@
 
                         <tr>
 
-                            <th>
-                                #
-                            </th>
+                            <th>#</th>
 
-                            <th>
-                                Code
-                            </th>
+                            <th>Code</th>
 
-                            <th>
-                                Subject
-                            </th>
+                            <th>Subject</th>
 
-                            <th>
-                                Year Level
-                            </th>
+                            <th>Year Level</th>
 
-                            <th>
-                                Semester
-                            </th>
+                            <th>Semester</th>
 
-                            <th>
-                                Units
-                            </th>
+                            <th>Units</th>
 
-                            <th>
-                                Action
-                            </th>
+                            <th>Action</th>
 
                         </tr>
 
@@ -339,9 +605,6 @@
                                 {{ index + 1 }}
                             </td>
 
-
-                            <!-- CODE -->
-
                             <td>
 
                                 <span class="subject-code">
@@ -353,9 +616,6 @@
                                 </span>
 
                             </td>
-
-
-                            <!-- SUBJECT TITLE -->
 
                             <td>
 
@@ -369,26 +629,13 @@
 
                             </td>
 
-
-                            <!-- YEAR -->
-
                             <td>
-
                                 {{ formatYear(item.year_level) }}
-
                             </td>
-
-
-                            <!-- SEMESTER -->
 
                             <td>
-
                                 {{ formatSemester(item.semester) }}
-
                             </td>
-
-
-                            <!-- UNITS -->
 
                             <td>
 
@@ -401,9 +648,6 @@
                                 </span>
 
                             </td>
-
-
-                            <!-- ACTION -->
 
                             <td>
 
@@ -432,8 +676,6 @@
 
                     </tbody>
 
-
-                    <!-- TOTAL -->
 
                     <tfoot>
 
@@ -638,8 +880,6 @@
 
             <div class="modal-body">
 
-                <!-- SUBJECT -->
-
                 <label>
                     Subject
                 </label>
@@ -668,8 +908,6 @@
 
                 </select>
 
-
-                <!-- YEAR -->
 
                 <label>
                     Year Level
@@ -703,8 +941,6 @@
                 </select>
 
 
-                <!-- SEMESTER -->
-
                 <label>
                     Semester
                 </label>
@@ -732,8 +968,6 @@
 
                 </select>
 
-
-                <!-- UNITS -->
 
                 <div v-if="editingSubject">
 
@@ -828,6 +1062,52 @@ import api from "@/services/api"
 
 /*
 |--------------------------------------------------------------------------
+| ALERT
+|--------------------------------------------------------------------------
+*/
+
+const alertMessage = ref("")
+
+const alertType = ref("success")
+
+let alertTimer = null
+
+
+function showAlert(
+    message,
+    type = "success"
+) {
+
+    alertMessage.value = message
+
+    alertType.value = type
+
+
+    if (alertTimer) {
+
+        clearTimeout(alertTimer)
+
+    }
+
+
+    alertTimer = setTimeout(() => {
+
+        clearAlert()
+
+    }, 4000)
+
+}
+
+
+function clearAlert() {
+
+    alertMessage.value = ""
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
 | DATA
 |--------------------------------------------------------------------------
 */
@@ -841,23 +1121,46 @@ const subjects = ref([])
 const allSubjects = ref([])
 
 
+/*
+|--------------------------------------------------------------------------
+| ACADEMIC PERIOD
+|--------------------------------------------------------------------------
+*/
+
+const schoolYears = ref([])
+
+const semesters = ref([])
+
+const selectedAcademicYear = ref("")
+
+const selectedSemester = ref("")
+
+const activePeriod = ref(null)
+
+const loadingAcademicPeriod = ref(false)
+
+const savingAcademicPeriod = ref(false)
+
+
+/*
+|--------------------------------------------------------------------------
+| CURRICULUM
+|--------------------------------------------------------------------------
+*/
+
 const selectedCourse = ref("")
 
 const selectedCurriculum = ref("")
 
-
 const selectedCurriculumData = ref(null)
-
 
 const loadingSubjects = ref(false)
 
 const saving = ref(false)
 
-
 const showCurriculumModal = ref(false)
 
 const showSubjectModal = ref(false)
-
 
 const editingSubject = ref(null)
 
@@ -894,17 +1197,104 @@ const subjectForm = ref({
 
 /*
 |--------------------------------------------------------------------------
+| ACTIVE ACADEMIC YEAR NAME
+|--------------------------------------------------------------------------
+*/
+
+const activeAcademicYearName = computed(() => {
+
+    if (!activePeriod.value) {
+
+        return "-"
+
+    }
+
+
+    const schoolYear =
+        schoolYears.value.find(
+            item =>
+                String(item.id) ===
+                String(
+                    activePeriod.value.school_year_id
+                )
+        )
+
+
+    if (schoolYear) {
+
+        return getSchoolYearName(schoolYear)
+
+    }
+
+
+    return (
+        activePeriod.value.school_year?.year ||
+        activePeriod.value.school_year?.name ||
+        activePeriod.value.academic_year ||
+        "-"
+    )
+
+})
+
+
+/*
+|--------------------------------------------------------------------------
+| ACTIVE SEMESTER NAME
+|--------------------------------------------------------------------------
+*/
+
+const activeSemesterName = computed(() => {
+
+    if (!activePeriod.value) {
+
+        return "-"
+
+    }
+
+
+    const semester =
+        semesters.value.find(
+            item =>
+                String(item.id) ===
+                String(
+                    activePeriod.value.semester_id
+                )
+        )
+
+
+    if (semester) {
+
+        return getSemesterName(semester)
+
+    }
+
+
+    return (
+        activePeriod.value.semester?.name ||
+        activePeriod.value.semester_name ||
+        "-"
+    )
+
+})
+
+
+/*
+|--------------------------------------------------------------------------
 | SELECTED SUBJECT UNITS
 |--------------------------------------------------------------------------
 */
 
 const selectedSubjectUnits = computed(() => {
 
-    const selected = allSubjects.value.find(
-        subject =>
-            String(subject.id) ===
-            String(subjectForm.value.subject_id)
-    )
+    const selected =
+        allSubjects.value.find(
+            subject =>
+                String(subject.id) ===
+                String(
+                    subjectForm.value.subject_id
+                )
+        )
+
 
     return selected?.units || 0
 
@@ -924,7 +1314,9 @@ const totalUnits = computed(() => {
         (total, item) => {
 
             return total +
-                Number(item.subject?.units || 0)
+                Number(
+                    item.subject?.units || 0
+                )
 
         },
 
@@ -937,6 +1329,329 @@ const totalUnits = computed(() => {
 
 /*
 |--------------------------------------------------------------------------
+| SCHOOL YEAR NAME
+|--------------------------------------------------------------------------
+*/
+
+function getSchoolYearName(schoolYear) {
+
+    return (
+        schoolYear.year ||
+        schoolYear.name ||
+        schoolYear.school_year ||
+        schoolYear.label ||
+        "-"
+    )
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| SEMESTER NAME
+|--------------------------------------------------------------------------
+*/
+
+function getSemesterName(semester) {
+
+    return (
+        semester.name ||
+        semester.semester_name ||
+        semester.semester ||
+        semester.label ||
+        "-"
+    )
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| LOAD SCHOOL YEARS
+|--------------------------------------------------------------------------
+*/
+
+async function loadSchoolYears() {
+
+    try {
+
+        const response =
+            await api.get(
+                "/registrar/academic-years"
+            )
+
+
+        schoolYears.value =
+            Array.isArray(response.data)
+                ? response.data
+                : response.data.data || []
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Failed to load academic years:",
+            error
+        )
+
+        schoolYears.value = []
+
+        showAlert(
+            "Failed to load academic years.",
+            "error"
+        )
+
+    }
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| LOAD SEMESTERS
+|--------------------------------------------------------------------------
+*/
+
+async function loadSemesters() {
+
+    try {
+
+        const response =
+            await api.get(
+                "/registrar/semesters"
+            )
+
+
+        semesters.value =
+            Array.isArray(response.data)
+                ? response.data
+                : response.data.data || []
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Failed to load semesters:",
+            error
+        )
+
+        semesters.value = []
+
+        showAlert(
+            "Failed to load semesters.",
+            "error"
+        )
+
+    }
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| LOAD ACTIVE PERIOD
+|--------------------------------------------------------------------------
+*/
+
+async function loadActivePeriod() {
+
+    loadingAcademicPeriod.value = true
+
+
+    try {
+
+        const response =
+            await api.get(
+                "/registrar/active-period"
+            )
+
+
+        activePeriod.value =
+            response.data.active_period ||
+            response.data.data ||
+            response.data ||
+            null
+
+
+        if (activePeriod.value) {
+
+            selectedAcademicYear.value =
+                String(
+                    activePeriod.value.school_year_id ||
+                    ""
+                )
+
+
+            selectedSemester.value =
+                String(
+                    activePeriod.value.semester_id ||
+                    ""
+                )
+
+        }
+
+    }
+
+    catch (error) {
+
+        if (
+            error.response?.status !== 404
+        ) {
+
+            console.error(
+                "Failed to load active academic period:",
+                error
+            )
+
+        }
+
+        activePeriod.value = null
+
+    }
+
+    finally {
+
+        loadingAcademicPeriod.value = false
+
+    }
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| SET ACTIVE ACADEMIC PERIOD
+|--------------------------------------------------------------------------
+*/
+
+async function setActivePeriod() {
+
+    if (!selectedAcademicYear.value) {
+
+        showAlert(
+            "Please select an academic year.",
+            "error"
+        )
+
+        return
+
+    }
+
+
+    if (!selectedSemester.value) {
+
+        showAlert(
+            "Please select a semester.",
+            "error"
+        )
+
+        return
+
+    }
+
+
+    if (
+        !confirm(
+            "Set this academic year and semester as the active enrollment period?"
+        )
+    ) {
+
+        return
+
+    }
+
+
+    savingAcademicPeriod.value = true
+
+
+    try {
+
+        const response =
+            await api.post(
+
+                "/registrar/active-period",
+
+                {
+
+                    school_year_id:
+                        selectedAcademicYear.value,
+
+                    semester_id:
+                        selectedSemester.value
+
+                }
+
+            )
+
+
+        activePeriod.value =
+            response.data.active_period ||
+            response.data.data ||
+            response.data
+
+
+        if (activePeriod.value) {
+
+            selectedAcademicYear.value =
+                String(
+                    activePeriod.value.school_year_id ||
+                    selectedAcademicYear.value
+                )
+
+
+            selectedSemester.value =
+                String(
+                    activePeriod.value.semester_id ||
+                    selectedSemester.value
+                )
+
+        }
+
+
+        showAlert(
+            "Academic period has been set as active successfully.",
+            "success"
+        )
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Set active academic period error:",
+            error
+        )
+
+        console.error(
+            "Response:",
+            error.response?.data
+        )
+
+
+        showAlert(
+
+            error.response?.data?.message ||
+            "Failed to set the active academic period.",
+
+            "error"
+
+        )
+
+    }
+
+    finally {
+
+        savingAcademicPeriod.value = false
+
+    }
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
 | LOAD COURSES
 |--------------------------------------------------------------------------
 */
@@ -945,9 +1660,11 @@ async function loadCourses() {
 
     try {
 
-        const response = await api.get(
-            "/registrar/curriculum/courses"
-        )
+        const response =
+            await api.get(
+                "/registrar/curriculum/courses"
+            )
+
 
         courses.value =
             Array.isArray(response.data)
@@ -961,6 +1678,11 @@ async function loadCourses() {
         console.error(
             "Failed to load courses:",
             error
+        )
+
+        showAlert(
+            "Failed to load courses.",
+            "error"
         )
 
     }
@@ -994,15 +1716,23 @@ async function loadCurricula() {
 
     try {
 
-        const response = await api.get(
-            "/registrar/curriculum",
-            {
-                params: {
-                    course_id:
-                        selectedCourse.value
+        const response =
+            await api.get(
+
+                "/registrar/curriculum",
+
+                {
+
+                    params: {
+
+                        course_id:
+                            selectedCourse.value
+
+                    }
+
                 }
-            }
-        )
+
+            )
 
 
         curricula.value =
@@ -1020,6 +1750,11 @@ async function loadCurricula() {
         )
 
         curricula.value = []
+
+        showAlert(
+            "Failed to load curricula.",
+            "error"
+        )
 
     }
 
@@ -1050,10 +1785,6 @@ async function loadSubjects() {
 
     try {
 
-        /*
-         * Load curriculum information
-         */
-
         const curriculumResponse =
             await api.get(
                 `/registrar/curriculum/${selectedCurriculum.value}`
@@ -1065,10 +1796,6 @@ async function loadSubjects() {
             curriculumResponse.data
 
 
-        /*
-         * Load assigned subjects
-         */
-
         const subjectsResponse =
             await api.get(
                 `/registrar/curriculum/${selectedCurriculum.value}/subjects`
@@ -1079,12 +1806,6 @@ async function loadSubjects() {
             Array.isArray(subjectsResponse.data)
                 ? subjectsResponse.data
                 : subjectsResponse.data.data || []
-
-
-        console.log(
-            "Assigned curriculum subjects:",
-            subjects.value
-        )
 
     }
 
@@ -1101,6 +1822,11 @@ async function loadSubjects() {
         )
 
         subjects.value = []
+
+        showAlert(
+            "Failed to load curriculum subjects.",
+            "error"
+        )
 
     }
 
@@ -1134,12 +1860,6 @@ async function loadAllSubjects() {
                 ? response.data
                 : response.data.data || []
 
-
-        console.log(
-            "All subjects:",
-            allSubjects.value
-        )
-
     }
 
     catch (error) {
@@ -1150,6 +1870,11 @@ async function loadAllSubjects() {
         )
 
         allSubjects.value = []
+
+        showAlert(
+            "Failed to load subjects.",
+            "error"
+        )
 
     }
 
@@ -1170,8 +1895,9 @@ async function createCurriculum() {
         !curriculumForm.value.effective_year
     ) {
 
-        alert(
-            "Please complete the curriculum information."
+        showAlert(
+            "Please complete the curriculum information.",
+            "error"
         )
 
         return
@@ -1185,13 +1911,11 @@ async function createCurriculum() {
     try {
 
         await api.post(
+
             "/registrar/curriculum",
+
             curriculumForm.value
-        )
 
-
-        alert(
-            "Curriculum created successfully."
         )
 
 
@@ -1200,6 +1924,12 @@ async function createCurriculum() {
 
 
         closeCurriculumModal()
+
+
+        showAlert(
+            "Curriculum created successfully.",
+            "success"
+        )
 
 
         if (
@@ -1220,14 +1950,13 @@ async function createCurriculum() {
             error
         )
 
-        console.error(
-            "Response:",
-            error.response?.data
-        )
+        showAlert(
 
-        alert(
             error.response?.data?.message ||
-            "Failed to create curriculum."
+            "Failed to create curriculum.",
+
+            "error"
+
         )
 
     }
@@ -1313,8 +2042,9 @@ async function saveSubject() {
 
     if (!selectedCurriculum.value) {
 
-        alert(
-            "Please select a curriculum first."
+        showAlert(
+            "Please select a curriculum first.",
+            "error"
         )
 
         return
@@ -1327,8 +2057,9 @@ async function saveSubject() {
         !editingSubject.value
     ) {
 
-        alert(
-            "Please select a subject."
+        showAlert(
+            "Please select a subject.",
+            "error"
         )
 
         return
@@ -1338,8 +2069,9 @@ async function saveSubject() {
 
     if (!subjectForm.value.year_level) {
 
-        alert(
-            "Please select a year level."
+        showAlert(
+            "Please select a year level.",
+            "error"
         )
 
         return
@@ -1349,8 +2081,9 @@ async function saveSubject() {
 
     if (!subjectForm.value.semester) {
 
-        alert(
-            "Please select a semester."
+        showAlert(
+            "Please select a semester.",
+            "error"
         )
 
         return
@@ -1362,10 +2095,6 @@ async function saveSubject() {
 
 
     try {
-
-        /*
-         * ADD SUBJECT
-         */
 
         if (!editingSubject.value) {
 
@@ -1390,13 +2119,6 @@ async function saveSubject() {
 
         }
 
-
-        /*
-         * EDIT SUBJECT
-         *
-         * This requires a PUT route in Laravel.
-         */
-
         else {
 
             await api.put(
@@ -1418,18 +2140,19 @@ async function saveSubject() {
         }
 
 
-        alert(
-
+        const message =
             editingSubject.value
-
                 ? "Subject updated successfully."
-
                 : "Subject added successfully."
-
-        )
 
 
         closeSubjectModal()
+
+
+        showAlert(
+            message,
+            "success"
+        )
 
 
         await loadSubjects()
@@ -1443,14 +2166,13 @@ async function saveSubject() {
             error
         )
 
-        console.error(
-            "Response:",
-            error.response?.data
-        )
+        showAlert(
 
-        alert(
             error.response?.data?.message ||
-            "Failed to save subject."
+            "Failed to save subject.",
+
+            "error"
+
         )
 
     }
@@ -1492,8 +2214,9 @@ async function deleteSubject(id) {
         )
 
 
-        alert(
-            "Subject removed successfully."
+        showAlert(
+            "Subject removed successfully.",
+            "success"
         )
 
 
@@ -1508,14 +2231,13 @@ async function deleteSubject(id) {
             error
         )
 
-        console.error(
-            "Response:",
-            error.response?.data
-        )
+        showAlert(
 
-        alert(
             error.response?.data?.message ||
-            "Failed to remove subject."
+            "Failed to remove subject.",
+
+            "error"
+
         )
 
     }
@@ -1651,6 +2373,18 @@ function formatSemester(semester) {
 
 onMounted(async () => {
 
+    await Promise.all([
+
+        loadSchoolYears(),
+
+        loadSemesters()
+
+    ])
+
+
+    await loadActivePeriod()
+
+
     await loadCourses()
 
     await loadAllSubjects()
@@ -1662,6 +2396,12 @@ onMounted(async () => {
 
 <style scoped>
 
+/*
+|--------------------------------------------------------------------------
+| PAGE
+|--------------------------------------------------------------------------
+*/
+
 .page {
 
     padding: 10px;
@@ -1669,7 +2409,136 @@ onMounted(async () => {
 }
 
 
-/* HEADER */
+/*
+|--------------------------------------------------------------------------
+| PAGE ALERT
+|--------------------------------------------------------------------------
+*/
+
+.page-alert {
+
+    position: fixed;
+
+    top: 25px;
+
+    right: 25px;
+
+    min-width: 320px;
+
+    max-width: 450px;
+
+    padding: 15px 18px;
+
+    border-radius: 12px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    z-index: 20000;
+
+    box-shadow:
+        0 10px 30px rgba(0,0,0,.15);
+
+}
+
+.alert-success {
+
+    background: #ECFDF5;
+
+    border: 1px solid #A7F3D0;
+
+    color: #065F46;
+
+}
+
+.alert-error {
+
+    background: #FEF2F2;
+
+    border: 1px solid #FECACA;
+
+    color: #991B1B;
+
+}
+
+.alert-icon {
+
+    font-size: 22px;
+
+}
+
+.alert-content {
+
+    display: flex;
+
+    flex-direction: column;
+
+    flex: 1;
+
+    gap: 2px;
+
+}
+
+.alert-content strong {
+
+    font-size: 14px;
+
+}
+
+.alert-content span {
+
+    font-size: 13px;
+
+}
+
+.alert-close {
+
+    border: none;
+
+    background: transparent;
+
+    color: inherit;
+
+    font-size: 20px;
+
+    cursor: pointer;
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| ALERT ANIMATION
+|--------------------------------------------------------------------------
+*/
+
+.alert-enter-active,
+.alert-leave-active {
+
+    transition:
+        all .3s ease;
+
+}
+
+.alert-enter-from,
+.alert-leave-to {
+
+    opacity: 0;
+
+    transform:
+        translateX(30px);
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| HEADER
+|--------------------------------------------------------------------------
+*/
 
 .page-header {
 
@@ -1702,7 +2571,11 @@ onMounted(async () => {
 }
 
 
-/* CARD */
+/*
+|--------------------------------------------------------------------------
+| CARD
+|--------------------------------------------------------------------------
+*/
 
 .card {
 
@@ -1714,7 +2587,8 @@ onMounted(async () => {
 
     margin-bottom: 20px;
 
-    box-shadow: 0 5px 20px rgba(0,0,0,.06);
+    box-shadow:
+        0 5px 20px rgba(0,0,0,.06);
 
 }
 
@@ -1725,7 +2599,219 @@ onMounted(async () => {
 }
 
 
-/* SECTION */
+/*
+|--------------------------------------------------------------------------
+| ACTIVE PERIOD
+|--------------------------------------------------------------------------
+*/
+
+.active-period-card {
+
+    border-left:
+        5px solid #064E2A;
+
+}
+
+.active-period-header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: flex-start;
+
+    gap: 20px;
+
+}
+
+.active-period-badge {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 7px;
+
+    background: #DCFCE7;
+
+    color: #166534;
+
+    padding: 7px 13px;
+
+    border-radius: 20px;
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+}
+
+.active-dot {
+
+    width: 8px;
+
+    height: 8px;
+
+    background: #16A34A;
+
+    border-radius: 50%;
+
+}
+
+.period-button-wrapper {
+
+    display: flex;
+
+    align-items: flex-end;
+
+}
+
+.btn-active-period {
+
+    width: 100%;
+
+    min-height: 45px;
+
+}
+
+.current-period {
+
+    margin-top: 22px;
+
+    padding: 15px 18px;
+
+    background: #ECFDF5;
+
+    border: 1px solid #BBF7D0;
+
+    border-radius: 12px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+
+}
+
+.current-period-icon {
+
+    width: 42px;
+
+    height: 42px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 10px;
+
+    background: #064E2A;
+
+    color: white;
+
+    font-size: 19px;
+
+}
+
+.current-period-info {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 3px;
+
+}
+
+.current-period-label {
+
+    color: #6B7280;
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+}
+
+.current-period-info strong {
+
+    color: #064E2A;
+
+    font-size: 16px;
+
+}
+
+.separator {
+
+    margin: 0 5px;
+
+    color: #6B7280;
+
+}
+
+.no-active-period {
+
+    margin-top: 22px;
+
+    padding: 15px 18px;
+
+    background: #FFFBEB;
+
+    border: 1px solid #FDE68A;
+
+    border-radius: 12px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    color: #92400E;
+
+}
+
+.no-active-period i {
+
+    font-size: 20px;
+
+}
+
+.no-active-period div {
+
+    display: flex;
+
+    flex-direction: column;
+
+}
+
+.no-active-period span {
+
+    font-size: 13px;
+
+    color: #A16207;
+
+}
+
+.period-loading {
+
+    text-align: center;
+
+    margin-top: 20px;
+
+    color: #6B7280;
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| SECTION
+|--------------------------------------------------------------------------
+*/
 
 .section-title {
 
@@ -1752,7 +2838,11 @@ onMounted(async () => {
 }
 
 
-/* FORM */
+/*
+|--------------------------------------------------------------------------
+| FORM
+|--------------------------------------------------------------------------
+*/
 
 label {
 
@@ -1791,7 +2881,11 @@ label {
 }
 
 
-/* BUTTON */
+/*
+|--------------------------------------------------------------------------
+| BUTTON
+|--------------------------------------------------------------------------
+*/
 
 .btn-primary {
 
@@ -1815,8 +2909,20 @@ label {
 
 }
 
+.btn-primary:disabled {
 
-/* CURRICULUM HEADER */
+    opacity: .6;
+
+    cursor: not-allowed;
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| CURRICULUM
+|--------------------------------------------------------------------------
+*/
 
 .curriculum-header,
 .subjects-header {
@@ -1840,7 +2946,11 @@ label {
 }
 
 
-/* STATUS */
+/*
+|--------------------------------------------------------------------------
+| STATUS
+|--------------------------------------------------------------------------
+*/
 
 .status {
 
@@ -1871,7 +2981,11 @@ label {
 }
 
 
-/* TABLE */
+/*
+|--------------------------------------------------------------------------
+| TABLE
+|--------------------------------------------------------------------------
+*/
 
 .table {
 
@@ -1914,7 +3028,11 @@ label {
 }
 
 
-/* SUBJECT CODE */
+/*
+|--------------------------------------------------------------------------
+| SUBJECT CODE
+|--------------------------------------------------------------------------
+*/
 
 .subject-code {
 
@@ -1933,7 +3051,11 @@ label {
 }
 
 
-/* UNITS */
+/*
+|--------------------------------------------------------------------------
+| UNITS
+|--------------------------------------------------------------------------
+*/
 
 .units {
 
@@ -1948,7 +3070,11 @@ label {
 }
 
 
-/* ACTION BUTTONS */
+/*
+|--------------------------------------------------------------------------
+| ACTION BUTTONS
+|--------------------------------------------------------------------------
+*/
 
 .btn-edit,
 .btn-delete {
@@ -1982,7 +3108,11 @@ label {
 }
 
 
-/* EMPTY */
+/*
+|--------------------------------------------------------------------------
+| EMPTY
+|--------------------------------------------------------------------------
+*/
 
 .empty,
 .empty-main {
@@ -2008,8 +3138,7 @@ label {
     padding: 70px 20px;
 
     box-shadow:
-        0 5px 20px
-        rgba(0,0,0,.05);
+        0 5px 20px rgba(0,0,0,.05);
 
 }
 
@@ -2039,7 +3168,11 @@ label {
 }
 
 
-/* LOADING */
+/*
+|--------------------------------------------------------------------------
+| LOADING
+|--------------------------------------------------------------------------
+*/
 
 .loading {
 
@@ -2084,7 +3217,11 @@ label {
 }
 
 
-/* MODAL */
+/*
+|--------------------------------------------------------------------------
+| MODAL
+|--------------------------------------------------------------------------
+*/
 
 .modal-overlay {
 
@@ -2117,8 +3254,7 @@ label {
     border-radius: 16px;
 
     box-shadow:
-        0 20px 50px
-        rgba(0,0,0,.2);
+        0 20px 50px rgba(0,0,0,.2);
 
     overflow: hidden;
 
@@ -2197,17 +3333,23 @@ label {
 }
 
 
-/* MOBILE */
+/*
+|--------------------------------------------------------------------------
+| MOBILE
+|--------------------------------------------------------------------------
+*/
 
 @media (max-width: 768px) {
 
     .page-header,
+    .active-period-header,
     .curriculum-header,
     .subjects-header {
 
         flex-direction: column;
 
     }
+
 
     .page-header .btn-primary,
     .subjects-header .btn-primary {
@@ -2216,9 +3358,39 @@ label {
 
     }
 
+
+    .period-button-wrapper {
+
+        width: 100%;
+
+    }
+
+
+    .current-period {
+
+        align-items: flex-start;
+
+    }
+
+
     .table {
 
         min-width: 800px;
+
+    }
+
+
+    .page-alert {
+
+        top: 15px;
+
+        left: 15px;
+
+        right: 15px;
+
+        min-width: auto;
+
+        max-width: none;
 
     }
 

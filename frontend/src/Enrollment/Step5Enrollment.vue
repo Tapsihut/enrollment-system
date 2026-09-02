@@ -181,42 +181,20 @@
 
 
             <!-- ================= YEAR LEVEL ================= -->
-
             <div class="col-md-6">
-
-                <label>
-                    Year Level
-                </label>
-
-                <select
-                    class="form-select"
-                    v-model="model.year_level"
-                >
-
-                    <option value="">
-                        Select Year Level
-                    </option>
-
-                    <option value="1">
-                        1st Year
-                    </option>
-
-                    <option value="2">
-                        2nd Year
-                    </option>
-
-                    <option value="3">
-                        3rd Year
-                    </option>
-
-                    <option value="4">
-                        4th Year
-                    </option>
-
+                <label>Year Level</label>
+                <select class="form-select" v-model="model.year_level"
+                    :disabled="model.student_type === 'Freshmen'">
+                    <option value="">Select Year Level</option>
+                    <option value="1">1st Year</option>
+                    <option value="2">2nd Year</option>
+                    <option value="3">3rd Year</option>
+                    <option value="4">4th Year</option>
                 </select>
-
+                <small v-if="model.student_type === 'Freshmen'" class="text-muted">
+                    New students are automatically assigned to 1st Year.
+                </small>
             </div>
-
 
             <!-- ================= REMARKS ================= -->
 
@@ -249,123 +227,63 @@
 </div>
 
 </template>
-
-
+```vue
 <script setup>
-
 import { ref, onMounted, computed, watch } from "vue"
-
 import api from "@/services/api"
 
-
 const model = defineModel()
-
-
-// ================= DATA =================
-
 const schoolYears = ref([])
-
 const semesters = ref([])
-
 const courses = ref([])
-
 const curricula = ref([])
 
-
-// ================= LOAD OPTIONS =================
-
 async function loadEnrollmentData() {
-
     try {
+        const { data } = await api.get("/enrollment/options")
 
-        const { data } =
-            await api.get("/enrollment/options")
+        schoolYears.value = (data.school_years || []).filter(
+            year => year.is_active == 1 || year.is_active === true
+        )
+        semesters.value = (data.semesters || []).filter(
+            semester => semester.is_active == 1 || semester.is_active === true
+        )
+        courses.value = data.courses || []
+        curricula.value = data.curricula || []
 
-
-        schoolYears.value =
-            data.school_years
-
-
-        semesters.value =
-            data.semesters
-
-
-        courses.value =
-            data.courses
-
-
-        curricula.value =
-            data.curricula
-
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Failed to load enrollment options:",
-            error
+        const activeYear = schoolYears.value.find(
+            year => year.is_active == 1 || year.is_active === true
+        )
+        const activeSemester = semesters.value.find(
+            semester => semester.is_active == 1 || semester.is_active === true
         )
 
+        if (activeYear) model.value.school_year_id = activeYear.id
+        if (activeSemester) model.value.semester_id = activeSemester.id
+        if (model.value.student_type === "new")
+            model.value.year_level = "1"
+    } catch (error) {
+        console.error("Failed to load enrollment options:", error)
     }
-
 }
 
-
-// ================= SELECTED CURRICULUM =================
-
 const selectedCurriculum = computed(() => {
-
-    if (!model.value.course_id) {
-
-        return null
-
-    }
-
-
+    if (!model.value.course_id) return null
     return curricula.value.find(
-
-        curriculum =>
-            curriculum.course_id == model.value.course_id
-
+        curriculum => curriculum.course_id == model.value.course_id
     )
-
 })
 
+watch(selectedCurriculum, curriculum => {
+    model.value.curriculum_id = curriculum ? curriculum.id : ""
+}, { immediate: true })
 
-// ================= AUTOMATIC CURRICULUM =================
-
-watch(
-
-    selectedCurriculum,
-
-    (curriculum) => {
-
-        model.value.curriculum_id =
-            curriculum
-                ? curriculum.id
-                : ""
-
-    },
-
-    {
-        immediate: true
-    }
-
-)
-
-
-// ================= LOAD DATA =================
-
-onMounted(() => {
-
-    loadEnrollmentData()
-
+watch(() => model.value.student_type, type => {
+    model.value.year_level = type === "new" ? "1" : ""
 })
 
+onMounted(loadEnrollmentData)
 </script>
-
-
 <style scoped>
 
 /* =========================================================

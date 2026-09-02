@@ -218,7 +218,7 @@
 
                                 <i class="bi bi-check-circle-fill"></i>
 
-                                Enrolled
+                                {{ formatYear(enrollment.status) }}
 
                             </span>
 
