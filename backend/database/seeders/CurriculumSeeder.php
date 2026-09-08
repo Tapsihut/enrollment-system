@@ -19,26 +19,14 @@ class CurriculumSeeder extends Seeder
         $bsit = Course::where('code', 'BSIT')->first();
 
         if ($bsit) {
-
             Curriculum::updateOrCreate(
                 [
                     'course_id' => $bsit->id,
-                    'effective_year' => '2026'
+                    'effective_year' => '2024'
                 ],
                 [
-                    'name' => '2026 Curriculum',
+                    'name' => '2024-2025 Curriculum',
                     'active' => 1
-                ]
-            );
-
-            Curriculum::updateOrCreate(
-                [
-                    'course_id' => $bsit->id,
-                    'effective_year' => '2025'
-                ],
-                [
-                    'name' => '2025 Curriculum',
-                    'active' => 0
                 ]
             );
         }

@@ -180,21 +180,29 @@
             </div>
 
 
-            <!-- ================= YEAR LEVEL ================= -->
-            <div class="col-md-6">
-                <label>Year Level</label>
-                <select class="form-select" v-model="model.year_level"
-                    :enabled="model.student_type === 'Freshmen'">
-                    <option value="">Select Year Level</option>
-                    <option value="1">1st Year</option>
-                    <option value="2">2nd Year</option>
-                    <option value="3">3rd Year</option>
-                    <option value="4">4th Year</option>
-                </select>
-                <small v-if="model.student_type === 'Freshmen'" class="text-muted">
-                    New students are automatically assigned to 1st Year.
-                </small>
-            </div>
+        <!-- ================= YEAR LEVEL ================= -->
+        <div class="col-md-6">
+            <label>Year Level</label>
+
+            <select
+                class="form-select"
+                v-model="model.year_level"
+                :disabled="model.student_type === 'Freshmen'"
+            >
+                <option value="">Select Year Level</option>
+                <option value="1">1st Year</option>
+                <option value="2">2nd Year</option>
+                <option value="3">3rd Year</option>
+                <option value="4">4th Year</option>
+            </select>
+
+            <small
+                v-if="model.student_type === 'Freshmen'"
+                class="text-muted"
+            >
+                Freshmen students are automatically assigned to 1st Year.
+            </small>
+        </div>
 
             <!-- ================= REMARKS ================= -->
 
@@ -227,7 +235,6 @@
 </div>
 
 </template>
-```vue
 <script setup>
 import { ref, onMounted, computed, watch } from "vue"
 import api from "@/services/api"
@@ -278,9 +285,17 @@ watch(selectedCurriculum, curriculum => {
     model.value.curriculum_id = curriculum ? curriculum.id : ""
 }, { immediate: true })
 
-watch(() => model.value.student_type, type => {
-    model.value.year_level = type === "new" ? "1" : ""
-})
+watch(
+    ()=>model.value.student_type,
+    (type)=>{
+        if(type==='Freshmen'){
+            model.value.year_level='1'
+        }else{
+            model.value.year_level=''
+        }
+    },
+    {immediate:true}
+)
 
 onMounted(loadEnrollmentData)
 </script>

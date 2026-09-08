@@ -1,135 +1,93 @@
 <template>
-
 <div class="registrar-container">
 
-    <!-- SIDEBAR -->
-
-    <RegistrarSidebar
-        :class="{ open: sidebarOpen }"
-    />
-
-    <!-- MOBILE OVERLAY -->
-
-    <div
-        v-if="sidebarOpen"
-        class="overlay"
-        @click="sidebarOpen=false"
-    ></div>
-
-    <!-- MAIN CONTENT -->
+    <RegistrarSidebar :class="{open:sidebarOpen}"/>
+    <div v-if="sidebarOpen" class="overlay" @click="sidebarOpen=false"></div>
 
     <div class="main-content">
 
         <!-- TOPBAR -->
-
         <header class="topbar">
 
             <div class="page-info">
-
-                <button
-                    class="menu-toggle"
-                    @click="sidebarOpen=!sidebarOpen"
-                >
+                <button class="menu-toggle" @click="sidebarOpen=!sidebarOpen">
                     <i class="bi bi-list"></i>
                 </button>
 
                 <div>
-
-                    <h5>
-                        Registrar Portal
-                    </h5>
-
-                    <small>
-                        Manage student enrollment and records
-                    </small>
-
+                    <h5>Registrar Portal</h5>
+                    <small>Manage student enrollment and records</small>
                 </div>
-
             </div>
-
-            <!-- RIGHT SIDE -->
 
             <div class="top-actions">
 
-                <!-- NOTIFICATION -->
-
+                <!-- NOTIFICATIONS -->
                 <div class="notification-wrapper">
 
-                    <button
-                        class="icon-btn"
-                        @click="toggleNotifications"
-                    >
-
+                    <button class="icon-btn" @click.stop="toggleNotifications">
                         <i class="bi bi-bell"></i>
 
-                        <span
-                            v-if="unreadCount > 0"
-                            class="notification-dot"
-                        ></span>
+                        <span v-if="unreadCount>0" class="notification-dot"></span>
 
-                        <span
-                            v-if="unreadCount > 0"
-                            class="notification-count"
-                        >
-                            {{ unreadCount > 9 ? '9+' : unreadCount }}
+                        <span v-if="unreadCount>0" class="notification-count">
+                            {{unreadCount>9?'9+':unreadCount}}
                         </span>
-
                     </button>
 
-
-                    <!-- NOTIFICATION PANEL -->
-
+                    <!-- PANEL -->
                     <div
                         v-if="showNotifications"
                         class="notification-panel"
+                        @click.stop
                     >
 
                         <!-- HEADER -->
-
                         <div class="notification-header">
 
                             <div>
-
-                                <strong>
-                                    Notifications
-                                </strong>
-
+                                <strong>Notifications</strong>
                                 <small>
-                                    {{ unreadCount }} unread
+                                    {{unreadCount}} unread
                                 </small>
+                            </div>
+
+                            <div class="header-actions">
+
+                                <button
+                                    class="refresh-btn"
+                                    @click="loadNotifications"
+                                    :disabled="notificationLoading"
+                                    title="Refresh"
+                                >
+                                    <i
+                                        class="bi"
+                                        :class="notificationLoading?'bi-arrow-repeat spin':'bi-arrow-clockwise'"
+                                    ></i>
+                                </button>
+
+                                <button
+                                    v-if="unreadCount>0"
+                                    class="mark-read-btn"
+                                    @click="markAllAsRead"
+                                >
+                                    Mark all as read
+                                </button>
 
                             </div>
 
-
-                            <button
-                                v-if="unreadCount > 0"
-                                class="mark-read-btn"
-                                @click="markAllAsRead"
-                            >
-                                Mark all as read
-                            </button>
-
                         </div>
 
-
                         <!-- LOADING -->
-
                         <div
                             v-if="notificationLoading"
                             class="notification-loading"
                         >
-
                             <div class="spinner"></div>
-
-                            <span>
-                                Loading notifications...
-                            </span>
-
+                            <span>Loading notifications...</span>
                         </div>
 
-
-                        <!-- NOTIFICATIONS -->
-
+                        <!-- LIST -->
                         <div
                             v-else-if="notifications.length"
                             class="notification-list"
@@ -139,9 +97,7 @@
                                 v-for="notification in notifications"
                                 :key="notification.id"
                                 class="notification-item"
-                                :class="{
-                                    unread: !notification.read
-                                }"
+                                :class="{unread:!notification.read}"
                                 @click="openNotification(notification)"
                             >
 
@@ -149,30 +105,24 @@
                                     class="notification-icon"
                                     :class="notification.type"
                                 >
-
-                                    <i
-                                        :class="notification.icon"
-                                    ></i>
-
+                                    <i :class="notification.icon"></i>
                                 </div>
-
 
                                 <div class="notification-content">
 
                                     <strong>
-                                        {{ notification.title }}
+                                        {{notification.title}}
                                     </strong>
 
                                     <p>
-                                        {{ notification.message }}
+                                        {{notification.message}}
                                     </p>
 
                                     <small>
-                                        {{ notification.time }}
+                                        {{notification.time}}
                                     </small>
 
                                 </div>
-
 
                                 <span
                                     v-if="!notification.read"
@@ -183,94 +133,57 @@
 
                         </div>
 
-
                         <!-- EMPTY -->
-
                         <div
                             v-else
                             class="notification-empty"
                         >
-
                             <i class="bi bi-bell-slash"></i>
-
-                            <strong>
-                                No notifications
-                            </strong>
-
-                            <span>
-                                You're all caught up.
-                            </span>
-
+                            <strong>No notifications</strong>
+                            <span>You're all caught up.</span>
                         </div>
 
-
                         <!-- FOOTER -->
-
                         <div class="notification-footer">
 
-                            <button
-                                @click="goToApplications"
-                            >
+                            <button @click="goToApplications">
+                                <i class="bi bi-folder2-open"></i>
                                 View all applications
                             </button>
 
                         </div>
 
                     </div>
-
                 </div>
 
-
                 <!-- USER -->
-
                 <div class="profile">
 
                     <div class="avatar">
-
                         <i class="bi bi-person"></i>
-
                     </div>
 
                     <div class="user-info">
-
-                        <strong>
-                            {{ user?.name }}
-                        </strong>
-
-                        <small>
-                            Registrar
-                        </small>
-
+                        <strong>{{user?.name||"Registrar"}}</strong>
+                        <small>Registrar</small>
                     </div>
 
-                    <button
-                        class="logout-btn"
-                        @click="logout"
-                    >
-
+                    <button class="logout-btn" @click="logout">
                         <i class="bi bi-box-arrow-right"></i>
-
                     </button>
 
                 </div>
 
             </div>
-
         </header>
 
-
         <!-- PAGE -->
-
         <main class="page-content">
-
-            <router-view />
-
+            <router-view/>
         </main>
 
     </div>
-
 </div>
-
 </template>
 
 
@@ -283,307 +196,387 @@ import {
     onBeforeUnmount
 } from "vue"
 
-import {
-    useRouter
-} from "vue-router"
+import {useRouter} from "vue-router"
 
 import RegistrarSidebar
-    from "@/components/layout/RegistrarSidebar.vue"
+from "@/components/layout/RegistrarSidebar.vue"
 
 import api
-    from "@/services/api"
+from "@/services/api"
 
 
-const router = useRouter()
+const router=useRouter()
 
 
-/*
-|--------------------------------------------------------------------------
-| SIDEBAR
-|--------------------------------------------------------------------------
-*/
-
-const sidebarOpen = ref(false)
+/* SIDEBAR */
+const sidebarOpen=ref(false)
 
 
-/*
-|--------------------------------------------------------------------------
-| USER
-|--------------------------------------------------------------------------
-*/
-
-const user = ref(
-    JSON.parse(
-        localStorage.getItem("user")
-    ) || {}
+/* USER */
+const user=ref(
+    JSON.parse(localStorage.getItem("user"))||{}
 )
 
 
-/*
-|--------------------------------------------------------------------------
-| NOTIFICATIONS
-|--------------------------------------------------------------------------
-*/
+/* NOTIFICATIONS */
+const showNotifications=ref(false)
+const notificationLoading=ref(false)
+const notifications=ref([])
 
-const showNotifications = ref(false)
-
-const notificationLoading = ref(false)
-
-const notifications = ref([])
+let notificationInterval=null
 
 
-/*
-|--------------------------------------------------------------------------
-| UNREAD COUNT
-|--------------------------------------------------------------------------
-*/
-
-const unreadCount = computed(() => {
-
+/* UNREAD COUNT */
+const unreadCount=computed(()=>{
     return notifications.value.filter(
-        notification => !notification.read
+        notification=>!notification.read
     ).length
-
 })
 
 
-/*
-|--------------------------------------------------------------------------
-| TOGGLE NOTIFICATIONS
-|--------------------------------------------------------------------------
-*/
+/* TOGGLE */
+function toggleNotifications(){
 
-function toggleNotifications() {
-
-    showNotifications.value =
+    showNotifications.value=
         !showNotifications.value
 
-
-    if (showNotifications.value) {
-
+    if(showNotifications.value){
         loadNotifications()
-
     }
 
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| LOAD NOTIFICATIONS
-|--------------------------------------------------------------------------
-*/
+/* LOAD */
+async function loadNotifications(){
 
-async function loadNotifications() {
+    if(notificationLoading.value)return
 
-    if (notificationLoading.value) {
-        return
-    }
+    notificationLoading.value=true
 
-    notificationLoading.value = true
+    try{
 
-    try {
+        const response=
+            await api.get("/registrar/enrollments")
 
-        const response =
-            await api.get(
-                "/registrar/enrollments"
-            )
-
-
-        const enrollments =
-            response.data?.data ||
-            response.data ||
+        const enrollments=
+            response.data?.data||
+            response.data||
             []
 
+        if(!Array.isArray(enrollments)){
 
-        if (!Array.isArray(enrollments)) {
-
-            notifications.value = []
+            notifications.value=[]
 
             return
-
         }
 
 
+        const result=[]
+
+
         /*
-        |----------------------------------------------------------------------
-        | Convert recent enrollment records into notifications
-        |----------------------------------------------------------------------
+        |--------------------------------------------------------------
+        | SORT NEWEST FIRST
+        |--------------------------------------------------------------
         */
 
-        notifications.value =
-            enrollments
-                .slice(0, 10)
-                .map((enrollment, index) => {
+        const sorted=
+            [...enrollments].sort((a,b)=>{
 
-                    const student =
-                        enrollment.student
+                const dateA=
+                    new Date(
+                        a.updated_at||
+                        a.created_at||
+                        0
+                    )
 
+                const dateB=
+                    new Date(
+                        b.updated_at||
+                        b.created_at||
+                        0
+                    )
 
-                    const studentName =
-                        student
-                        ? `${student.first_name || ""} ${student.last_name || ""}`.trim()
-                        : "A student"
-
-
-                    const status =
-                        String(
-                            enrollment.status || ""
-                        ).toLowerCase()
-
-
-                    let title =
-                        "New Enrollment Application"
-
-                    let message =
-                        `${studentName} submitted an enrollment application.`
-
-                    let icon =
-                        "bi bi-person-plus"
-
-                    let type =
-                        "application"
+                return dateB-dateA
+            })
 
 
-                    if (status === "approved") {
+        /*
+        |--------------------------------------------------------------
+        | PROCESS RECENT APPLICATIONS
+        |--------------------------------------------------------------
+        */
 
-                        title =
-                            "Enrollment Approved"
+        sorted.slice(0,15).forEach(
+            (enrollment,index)=>{
 
-                        message =
-                            `${studentName}'s enrollment has been approved.`
+                const student=
+                    enrollment.student
 
-                        icon =
-                            "bi bi-check-circle"
+                const studentName=
+                    student
+                    ? `${student.first_name||""} ${student.last_name||""}`.trim()
+                    : "A student"
 
-                        type =
-                            "approved"
 
+                const status=
+                    String(
+                        enrollment.status||""
+                    ).toLowerCase()
+
+
+                let notification=null
+
+
+                /*
+                |----------------------------------------------------------
+                | PENDING
+                |----------------------------------------------------------
+                */
+
+                if(
+                    status==="pending"||
+                    status===""
+                ){
+
+                    notification={
+                        id:`pending-${enrollment.id}`,
+                        enrollmentId:enrollment.id,
+                        type:"application",
+                        icon:"bi bi-person-plus-fill",
+                        title:"New Enrollment Application",
+                        message:`${studentName} submitted an enrollment application.`,
+                        time:formatNotificationTime(
+                            enrollment.created_at
+                        )
                     }
 
+                }
 
-                    if (status === "rejected") {
 
-                        title =
-                            "Enrollment Rejected"
+                /*
+                |----------------------------------------------------------
+                | APPROVED
+                |----------------------------------------------------------
+                */
 
-                        message =
-                            `${studentName}'s enrollment was rejected.`
+                else if(status==="approved"){
 
-                        icon =
-                            "bi bi-x-circle"
-
-                        type =
-                            "rejected"
-
+                    notification={
+                        id:`approved-${enrollment.id}`,
+                        enrollmentId:enrollment.id,
+                        type:"approved",
+                        icon:"bi bi-check-circle-fill",
+                        title:"Enrollment Approved",
+                        message:`${studentName}'s enrollment has been approved.`,
+                        time:formatNotificationTime(
+                            enrollment.updated_at||
+                            enrollment.created_at
+                        )
                     }
 
+                }
 
-                    return {
 
-                        id:
-                            enrollment.id
-                            || index,
+                /*
+                |----------------------------------------------------------
+                | REJECTED
+                |----------------------------------------------------------
+                */
 
-                        enrollmentId:
-                            enrollment.id,
+                else if(status==="rejected"){
 
-                        title,
-
-                        message,
-
-                        icon,
-
-                        type,
-
-                        read:
-                            getReadStatus(
-                                enrollment.id
-                            ),
-
-                        time:
-                            formatNotificationTime(
-                                enrollment.created_at
-                            )
-
+                    notification={
+                        id:`rejected-${enrollment.id}`,
+                        enrollmentId:enrollment.id,
+                        type:"rejected",
+                        icon:"bi bi-x-circle-fill",
+                        title:"Enrollment Rejected",
+                        message:`${studentName}'s enrollment was rejected.`,
+                        time:formatNotificationTime(
+                            enrollment.updated_at||
+                            enrollment.created_at
+                        )
                     }
 
-                })
+                }
+
+
+                /*
+                |----------------------------------------------------------
+                | PAID
+                |----------------------------------------------------------
+                */
+
+                else if(status==="paid"){
+
+                    notification={
+                        id:`paid-${enrollment.id}`,
+                        enrollmentId:enrollment.id,
+                        type:"paid",
+                        icon:"bi bi-cash-coin",
+                        title:"Enrollment Payment Completed",
+                        message:`${studentName} has completed the enrollment payment.`,
+                        time:formatNotificationTime(
+                            enrollment.updated_at||
+                            enrollment.created_at
+                        )
+                    }
+
+                }
+
+
+                /*
+                |----------------------------------------------------------
+                | ENROLLED
+                |----------------------------------------------------------
+                */
+
+                else if(status==="enrolled"){
+
+                    notification={
+                        id:`enrolled-${enrollment.id}`,
+                        enrollmentId:enrollment.id,
+                        type:"enrolled",
+                        icon:"bi bi-person-check-fill",
+                        title:"Student Enrolled",
+                        message:`${studentName} is now officially enrolled.`,
+                        time:formatNotificationTime(
+                            enrollment.updated_at||
+                            enrollment.created_at
+                        )
+                    }
+
+                }
+
+
+                /*
+                |----------------------------------------------------------
+                | MISSING REQUIREMENTS
+                |----------------------------------------------------------
+                */
+
+                const hasMissingRequirements=
+                    enrollment.missing_requirements||
+                    enrollment.requirements_missing||
+                    enrollment.incomplete_requirements
+
+
+                if(hasMissingRequirements){
+
+                    notification={
+                        id:`requirements-${enrollment.id}`,
+                        enrollmentId:enrollment.id,
+                        type:"requirements",
+                        icon:"bi bi-file-earmark-x-fill",
+                        title:"Incomplete Requirements",
+                        message:`${studentName}'s enrollment has incomplete requirements.`,
+                        time:formatNotificationTime(
+                            enrollment.updated_at||
+                            enrollment.created_at
+                        )
+                    }
+
+                }
+
+
+                /*
+                |----------------------------------------------------------
+                | ADD NOTIFICATION
+                |----------------------------------------------------------
+                */
+
+                if(notification){
+
+                    notification.read=
+                        getReadStatus(
+                            notification.id
+                        )
+
+                    result.push(notification)
+                }
+
+            }
+        )
+
+
+        /*
+        |--------------------------------------------------------------
+        | REMOVE DUPLICATES
+        |--------------------------------------------------------------
+        */
+
+        const unique=
+            result.filter(
+                (item,index,self)=>
+                    index===
+                    self.findIndex(
+                        x=>x.id===item.id
+                    )
+            )
+
+
+        notifications.value=
+            unique.slice(0,10)
 
     }
-
-    catch(error) {
+    catch(error){
 
         console.error(
-            "Failed to load notifications:",
+            "Failed to load registrar notifications:",
             error
         )
 
-        notifications.value = []
-
     }
+    finally{
 
-    finally {
-
-        notificationLoading.value = false
+        notificationLoading.value=false
 
     }
 
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| READ STATUS
-|--------------------------------------------------------------------------
-*/
+/* READ STORAGE */
+function getReadNotifications(){
 
-function getReadStatus(id) {
-
-    const readNotifications =
-        JSON.parse(
-            localStorage.getItem(
-                "registrar_read_notifications"
-            )
-        ) || []
-
-
-    return readNotifications.includes(id)
-
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| MARK SINGLE NOTIFICATION AS READ
-|--------------------------------------------------------------------------
-*/
-
-function markAsRead(notification) {
-
-    notification.read = true
-
-
-    const readNotifications =
-        JSON.parse(
-            localStorage.getItem(
-                "registrar_read_notifications"
-            )
-        ) || []
-
-
-    if (
-        !readNotifications.includes(
-            notification.enrollmentId
+    return JSON.parse(
+        localStorage.getItem(
+            "registrar_read_notifications"
         )
-    ) {
+    )||[]
+
+}
+
+
+/* CHECK READ */
+function getReadStatus(id){
+
+    return getReadNotifications().includes(id)
+
+}
+
+
+/* MARK SINGLE */
+function markAsRead(notification){
+
+    notification.read=true
+
+    const readNotifications=
+        getReadNotifications()
+
+    if(
+        !readNotifications.includes(
+            notification.id
+        )
+    ){
 
         readNotifications.push(
-            notification.enrollmentId
+            notification.id
         )
 
     }
-
 
     localStorage.setItem(
         "registrar_read_notifications",
@@ -595,51 +588,50 @@ function markAsRead(notification) {
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| MARK ALL AS READ
-|--------------------------------------------------------------------------
-*/
+/* MARK ALL */
+function markAllAsRead(){
 
-function markAllAsRead() {
+    const readNotifications=
+        getReadNotifications()
 
     notifications.value.forEach(
-        notification => {
+        notification=>{
 
-            notification.read = true
+            notification.read=true
+
+            if(
+                !readNotifications.includes(
+                    notification.id
+                )
+            ){
+
+                readNotifications.push(
+                    notification.id
+                )
+
+            }
 
         }
     )
 
-
-    const ids =
-        notifications.value.map(
-            notification =>
-                notification.enrollmentId
-        )
-
-
     localStorage.setItem(
         "registrar_read_notifications",
-        JSON.stringify(ids)
+        JSON.stringify(
+            readNotifications
+        )
     )
 
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| OPEN NOTIFICATION
-|--------------------------------------------------------------------------
-*/
-
-function openNotification(notification) {
+/* OPEN */
+function openNotification(notification){
 
     markAsRead(notification)
 
-    showNotifications.value = false
+    showNotifications.value=false
 
-    if (notification.enrollmentId) {
+    if(notification.enrollmentId){
 
         router.push(
             `/registrar/applications/${notification.enrollmentId}`
@@ -650,15 +642,10 @@ function openNotification(notification) {
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| VIEW APPLICATIONS
-|--------------------------------------------------------------------------
-*/
+/* APPLICATIONS */
+function goToApplications(){
 
-function goToApplications() {
-
-    showNotifications.value = false
+    showNotifications.value=false
 
     router.push(
         "/registrar/applications"
@@ -667,181 +654,151 @@ function goToApplications() {
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| NOTIFICATION TIME
-|--------------------------------------------------------------------------
-*/
+/* TIME */
+function formatNotificationTime(date){
 
-function formatNotificationTime(date) {
+    if(!date)return "Recently"
 
-    if (!date) {
-        return "Recently"
-    }
-
-
-    const created =
+    const created=
         new Date(date)
 
-
-    if (Number.isNaN(
-        created.getTime()
-    )) {
+    if(
+        Number.isNaN(
+            created.getTime()
+        )
+    ){
 
         return "Recently"
 
     }
 
+    const now=new Date()
 
-    const now =
-        new Date()
-
-
-    const difference =
+    const difference=
         Math.floor(
-            (now - created) / 1000
+            (now-created)/1000
         )
 
 
-    if (difference < 60) {
-
+    if(difference<60)
         return "Just now"
 
-    }
+
+    if(difference<3600)
+        return `${Math.floor(difference/60)} minutes ago`
 
 
-    if (difference < 3600) {
-
-        return `${Math.floor(
-            difference / 60
-        )} minutes ago`
-
-    }
+    if(difference<86400)
+        return `${Math.floor(difference/3600)} hours ago`
 
 
-    if (difference < 86400) {
-
-        return `${Math.floor(
-            difference / 3600
-        )} hours ago`
-
-    }
-
-
-    if (difference < 604800) {
-
-        return `${Math.floor(
-            difference / 86400
-        )} days ago`
-
-    }
+    if(difference<604800)
+        return `${Math.floor(difference/86400)} days ago`
 
 
     return created.toLocaleDateString(
         "en-PH",
         {
-            month: "short",
-            day: "numeric",
-            year: "numeric"
+            month:"short",
+            day:"numeric",
+            year:"numeric"
         }
     )
 
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| CLOSE NOTIFICATION WHEN CLICKING OUTSIDE
-|--------------------------------------------------------------------------
-*/
+/* OUTSIDE CLICK */
+function handleOutsideClick(event){
 
-function handleOutsideClick(event) {
-
-    const wrapper =
-        document.querySelector(
+    const wrapper=
+        event.target.closest(
             ".notification-wrapper"
         )
 
+    if(!wrapper){
 
-    if (
-        wrapper &&
-        !wrapper.contains(
-            event.target
-        )
-    ) {
-
-        showNotifications.value = false
+        showNotifications.value=false
 
     }
 
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| LOGOUT
-|--------------------------------------------------------------------------
-*/
+/* LOGOUT */
+async function logout(){
 
-function logout() {
-
-    const confirmLogout =
-        confirm(
+    if(
+        !confirm(
             "Are you sure you want to logout?"
         )
+    )return
 
 
-    if (!confirmLogout) {
-        return
+    try{
+
+        await api.post("/logout")
+
     }
+    catch(error){
 
+        console.error(
+            "Logout error:",
+            error
+        )
 
-    localStorage.removeItem(
-        "token"
-    )
+    }
+    finally{
 
-    localStorage.removeItem(
-        "user"
-    )
+        localStorage.removeItem("token")
+        localStorage.removeItem("user")
 
+        delete api.defaults.headers.common[
+            "Authorization"
+        ]
 
-    delete api.defaults.headers.common[
-        "Authorization"
-    ]
+        sidebarOpen.value=false
 
+        router.replace("/login")
 
-    sidebarOpen.value = false
-
-
-    router.replace(
-        "/login"
-    )
+    }
 
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| LIFECYCLE
-|--------------------------------------------------------------------------
-*/
-
-onMounted(() => {
+/* LIFECYCLE */
+onMounted(()=>{
 
     document.addEventListener(
         "click",
         handleOutsideClick
     )
 
+    loadNotifications()
+
+    notificationInterval=
+        setInterval(
+            loadNotifications,
+            30000
+        )
+
 })
 
 
-onBeforeUnmount(() => {
+onBeforeUnmount(()=>{
 
     document.removeEventListener(
         "click",
         handleOutsideClick
     )
+
+    if(notificationInterval){
+
+        clearInterval(
+            notificationInterval
+        )
+
+    }
 
 })
 
@@ -849,8 +806,6 @@ onBeforeUnmount(() => {
 
 
 <style scoped>
-
-/* MAIN WRAPPER */
 
 .registrar-container{
     display:flex;
@@ -860,9 +815,6 @@ onBeforeUnmount(() => {
     background:#f5f7fb;
 }
 
-
-/* CONTENT AREA */
-
 .main-content{
     flex:1;
     min-width:0;
@@ -870,293 +822,291 @@ onBeforeUnmount(() => {
     flex-direction:column;
 }
 
-
-/* TOPBAR */
-
 .topbar{
     height:80px;
     flex-shrink:0;
-    background:white;
+    background:#fff;
     display:flex;
     align-items:center;
     justify-content:space-between;
-    padding:0 30px;
+    padding:0 25px;
     border-bottom:1px solid #e5e7eb;
     box-shadow:0 2px 10px rgba(0,0,0,.05);
 }
 
-
 .page-info{
     display:flex;
     align-items:center;
-    gap:15px;
+    gap:12px;
 }
-
 
 .page-info h5{
     margin:0;
+    font-size:18px;
     font-weight:800;
     color:#064E2A;
 }
 
-
 .page-info small{
     color:#6b7280;
+    font-size:12px;
 }
-
 
 .menu-toggle{
     display:none;
     border:none;
     background:#f3f4f6;
-    width:42px;
-    height:42px;
-    border-radius:12px;
+    width:40px;
+    height:40px;
+    border-radius:10px;
     font-size:22px;
     color:#064E2A;
+    cursor:pointer;
 }
-
-
-/* RIGHT AREA */
 
 .top-actions{
     display:flex;
     align-items:center;
-    gap:20px;
+    gap:15px;
 }
-
-
-/* NOTIFICATION */
 
 .notification-wrapper{
     position:relative;
 }
 
-
 .icon-btn{
     position:relative;
-    width:42px;
-    height:42px;
+    width:40px;
+    height:40px;
     border:none;
-    border-radius:12px;
+    border-radius:10px;
     background:#f3f4f6;
     color:#064E2A;
-    font-size:20px;
+    font-size:19px;
     cursor:pointer;
-    transition:.2s;
 }
-
 
 .icon-btn:hover{
     background:#e5f5ec;
 }
 
-
 .notification-dot{
     position:absolute;
-    top:7px;
-    right:8px;
-    width:9px;
-    height:9px;
+    top:6px;
+    right:6px;
+    width:8px;
+    height:8px;
     background:#dc2626;
-    border:2px solid white;
+    border:2px solid #fff;
     border-radius:50%;
 }
 
-
 .notification-count{
     position:absolute;
-    top:-6px;
-    right:-6px;
-    min-width:18px;
-    height:18px;
-    padding:0 4px;
+    top:-7px;
+    right:-7px;
+    min-width:19px;
+    height:19px;
+    padding:0 5px;
+    border-radius:20px;
     background:#dc2626;
-    color:white;
-    border-radius:10px;
-    font-size:9px;
+    color:#fff;
+    font-size:10px;
     font-weight:700;
     display:flex;
     align-items:center;
     justify-content:center;
 }
 
-
-/* NOTIFICATION PANEL */
-
 .notification-panel{
     position:absolute;
-    top:52px;
+    top:50px;
     right:0;
     width:380px;
-    background:white;
-    border-radius:15px;
-    box-shadow:0 15px 40px rgba(0,0,0,.15);
+    background:#fff;
     border:1px solid #e5e7eb;
+    border-radius:14px;
+    box-shadow:0 15px 40px rgba(0,0,0,.15);
     overflow:hidden;
-    z-index:2000;
+    z-index:9999;
 }
 
-
-/* NOTIFICATION HEADER */
-
 .notification-header{
-    padding:16px;
     display:flex;
     align-items:center;
     justify-content:space-between;
+    gap:10px;
+    padding:13px 15px;
     border-bottom:1px solid #e5e7eb;
 }
-
 
 .notification-header strong{
     display:block;
     color:#064E2A;
-    font-size:15px;
+    font-size:14px;
 }
-
 
 .notification-header small{
     color:#9ca3af;
-    font-size:11px;
+    font-size:10px;
 }
 
+.header-actions{
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+
+.refresh-btn{
+    width:30px;
+    height:30px;
+    border:none;
+    border-radius:7px;
+    background:#f3f4f6;
+    color:#064E2A;
+    cursor:pointer;
+}
+
+.refresh-btn:hover{
+    background:#e5f5ec;
+}
 
 .mark-read-btn{
     border:none;
     background:none;
     color:#0B6B3A;
-    font-size:11px;
+    font-size:10px;
     font-weight:600;
     cursor:pointer;
+    white-space:nowrap;
 }
-
 
 .mark-read-btn:hover{
     text-decoration:underline;
 }
 
-
-/* LIST */
-
 .notification-list{
-    max-height:380px;
+    max-height:370px;
     overflow-y:auto;
 }
-
 
 .notification-item{
     position:relative;
     display:flex;
-    gap:11px;
-    padding:14px 16px;
-    cursor:pointer;
+    align-items:flex-start;
+    gap:10px;
+    padding:11px 15px;
     border-bottom:1px solid #f1f5f9;
-    transition:.2s;
+    cursor:pointer;
+    transition:.15s;
 }
-
 
 .notification-item:hover{
     background:#f8faf9;
 }
 
-
 .notification-item.unread{
     background:#f0fdf4;
 }
 
-
 .notification-icon{
-    width:38px;
-    height:38px;
-    min-width:38px;
-    border-radius:10px;
+    width:36px;
+    height:36px;
+    min-width:36px;
+    border-radius:9px;
     display:flex;
     align-items:center;
     justify-content:center;
-    font-size:16px;
+    font-size:15px;
 }
-
 
 .notification-icon.application{
     background:#dbeafe;
     color:#2563eb;
 }
 
-
 .notification-icon.approved{
     background:#dcfce7;
     color:#15803d;
 }
-
 
 .notification-icon.rejected{
     background:#fee2e2;
     color:#dc2626;
 }
 
+.notification-icon.paid{
+    background:#d1fae5;
+    color:#047857;
+}
+
+.notification-icon.enrolled{
+    background:#ede9fe;
+    color:#7c3aed;
+}
+
+.notification-icon.requirements{
+    background:#fef3c7;
+    color:#b45309;
+}
 
 .notification-content{
     min-width:0;
-    padding-right:10px;
+    padding-right:8px;
 }
-
 
 .notification-content strong{
     display:block;
-    font-size:12px;
     color:#374151;
+    font-size:12px;
+    line-height:1.3;
 }
-
 
 .notification-content p{
-    margin:3px 0;
+    margin:2px 0;
     color:#6b7280;
     font-size:11px;
-    line-height:1.4;
+    line-height:1.35;
 }
-
 
 .notification-content small{
     color:#9ca3af;
-    font-size:10px;
+    font-size:9px;
 }
-
 
 .unread-dot{
     position:absolute;
-    right:14px;
-    top:18px;
+    top:17px;
+    right:12px;
     width:7px;
     height:7px;
-    border-radius:50%;
     background:#16a34a;
+    border-radius:50%;
 }
 
-
-/* LOADING */
-
 .notification-loading{
-    min-height:180px;
+    height:150px;
     display:flex;
     flex-direction:column;
     align-items:center;
     justify-content:center;
-    gap:10px;
+    gap:8px;
     color:#9ca3af;
-    font-size:12px;
+    font-size:11px;
 }
 
-
 .spinner{
-    width:24px;
-    height:24px;
+    width:22px;
+    height:22px;
     border:3px solid #dcfce7;
     border-top-color:#0B6B3A;
     border-radius:50%;
     animation:spin .7s linear infinite;
 }
 
+.spin{
+    animation:spin .7s linear infinite;
+}
 
 @keyframes spin{
     to{
@@ -1164,131 +1114,111 @@ onBeforeUnmount(() => {
     }
 }
 
-
-/* EMPTY */
-
 .notification-empty{
-    min-height:180px;
+    min-height:160px;
     display:flex;
     flex-direction:column;
     align-items:center;
     justify-content:center;
     color:#9ca3af;
+    padding:15px;
 }
-
 
 .notification-empty i{
-    font-size:32px;
-    margin-bottom:8px;
+    font-size:30px;
+    margin-bottom:7px;
 }
-
 
 .notification-empty strong{
     color:#374151;
-    font-size:13px;
+    font-size:12px;
 }
-
 
 .notification-empty span{
-    font-size:11px;
-    margin-top:3px;
+    margin-top:2px;
+    font-size:10px;
 }
 
-
-/* FOOTER */
-
 .notification-footer{
-    padding:12px;
+    padding:9px;
     border-top:1px solid #e5e7eb;
     text-align:center;
 }
 
-
 .notification-footer button{
     border:none;
-    background:none;
-    color:#0B6B3A;
-    font-size:12px;
-    font-weight:700;
+    background:#ecfdf5;
+    color:#166534;
+    padding:8px 15px;
+    border-radius:7px;
+    font-size:11px;
+    font-weight:600;
     cursor:pointer;
 }
 
-
 .notification-footer button:hover{
-    text-decoration:underline;
+    background:#d1fae5;
 }
-
-
-/* PROFILE */
 
 .profile{
     display:flex;
     align-items:center;
-    gap:12px;
-    padding-left:20px;
+    gap:10px;
+    padding-left:15px;
     border-left:1px solid #ddd;
 }
 
-
 .avatar{
-    width:45px;
-    height:45px;
+    width:40px;
+    height:40px;
     border-radius:50%;
     background:#064E2A;
-    color:white;
+    color:#fff;
     display:flex;
     align-items:center;
     justify-content:center;
-    font-size:20px;
+    font-size:18px;
 }
-
 
 .user-info{
     display:flex;
     flex-direction:column;
 }
 
+.user-info strong{
+    font-size:13px;
+}
 
 .user-info small{
+    font-size:10px;
     color:#6b7280;
 }
 
-
 .logout-btn{
-    width:40px;
-    height:40px;
+    width:36px;
+    height:36px;
     border:none;
-    border-radius:10px;
+    border-radius:9px;
     background:#fee2e2;
     color:#dc2626;
     cursor:pointer;
 }
 
-
 .logout-btn:hover{
     background:#dc2626;
-    color:white;
+    color:#fff;
 }
-
-
-/* PAGE CONTENT */
 
 .page-content{
     flex:1;
-    padding:30px;
+    padding:25px;
     width:100%;
     overflow-x:auto;
 }
 
-
-/* MOBILE OVERLAY */
-
 .overlay{
     display:none;
 }
-
-
-/* TABLET + MOBILE */
 
 @media(max-width:992px){
 
@@ -1297,7 +1227,6 @@ onBeforeUnmount(() => {
         align-items:center;
         justify-content:center;
     }
-
 
     :deep(.sidebar){
         position:fixed;
@@ -1309,11 +1238,9 @@ onBeforeUnmount(() => {
         transition:.3s;
     }
 
-
     :deep(.sidebar.open){
         left:0;
     }
-
 
     .overlay{
         display:block;
@@ -1323,11 +1250,9 @@ onBeforeUnmount(() => {
         z-index:999;
     }
 
-
     .user-info{
         display:none;
     }
-
 
     .profile{
         border-left:none;
@@ -1336,7 +1261,6 @@ onBeforeUnmount(() => {
 
 }
 
-
 @media(max-width:576px){
 
     .topbar{
@@ -1344,41 +1268,29 @@ onBeforeUnmount(() => {
         padding:0 15px;
     }
 
-
     .page-info h5{
         font-size:16px;
     }
-
 
     .page-info small{
         display:none;
     }
 
-
     .notification-panel{
         position:fixed;
         top:70px;
-        right:10px;
         left:10px;
+        right:10px;
         width:auto;
     }
-
-
-    .icon-btn{
-        display:flex;
-        align-items:center;
-        justify-content:center;
-    }
-
 
     .page-content{
         padding:15px;
     }
 
-
     .logout-btn{
-        width:36px;
-        height:36px;
+        width:34px;
+        height:34px;
     }
 
 }

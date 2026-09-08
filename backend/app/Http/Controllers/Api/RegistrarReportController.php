@@ -3,154 +3,81 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\Student;
 use App\Models\Enrollment;
 use App\Models\Payment;
-use App\Models\Course;
-use Illuminate\Http\Request;
+use App\Models\Assessment;
 
 class RegistrarReportController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | Main Report
-    |--------------------------------------------------------------------------
-    */
-
-    public function index(Request $request)
+    public function index()
     {
-        /*
-        |--------------------------------------------------------------------------
-        | Enrollment Statistics
-        |--------------------------------------------------------------------------
-        */
+        $totalApplications = Enrollment::count();
 
-        $totalEnrollments = Enrollment::count();
+        $pending = Enrollment::where('status', 'Pending')->count();
+        $approved = Enrollment::where('status', 'Approved')->count();
+        $enrolled = Enrollment::where('status', 'Enrolled')->count();
+        $rejected = Enrollment::where('status', 'Rejected')->count();
 
-        $pending = Enrollment::where(
-            'status',
-            'Pending'
-        )->count();
+        $paid = Payment::where('status', 'Paid')->count();
+        $unpaid = Payment::where('status', 'Pending')->count();
+        $failed = Payment::where('status', 'Failed')->count();
 
-        $approved = Enrollment::where(
-            'status',
-            'Approved'
-        )->count();
-
-        $enrolled = Enrollment::where(
-            'status',
-            'Enrolled'
-        )->count();
-
-        $rejected = Enrollment::where(
-            'status',
-            'Rejected'
-        )->count();
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Payment Statistics
-        |--------------------------------------------------------------------------
-        */
-
-        $paid = Payment::where(
-            'status',
-            'Paid'
-        )->count();
-
-        $unpaid = Payment::where(
-            'status',
-            'Pending'
-        )->count();
-
-        $failed = Payment::where(
-            'status',
-            'Failed'
-        )->count();
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Course Report
-        |--------------------------------------------------------------------------
-        */
-
-        $courses = Course::withCount([
-            'enrollments'
-        ])
-        ->orderBy(
-            'enrollments_count',
-            'desc'
-        )
-        ->get();
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Recent Enrollments
-        |--------------------------------------------------------------------------
-        */
+        $courseSummary = Enrollment::with('course')
+            ->selectRaw('course_id, COUNT(*) as total')
+            ->groupBy('course_id')
+            ->get();
 
         $recentEnrollments = Enrollment::with([
             'student',
             'course',
-            'curriculum',
             'schoolYear',
             'semester'
         ])
         ->latest()
-        ->take(50)
+        ->take(10)
         ->get();
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Return Report
-        |--------------------------------------------------------------------------
-        */
+        $paymentSummary = Payment::selectRaw(
+            'status, COUNT(*) as total, SUM(amount) as amount'
+        )
+        ->groupBy('status')
+        ->get();
 
         return response()->json([
-
             'statistics' => [
-
-                'total' => $totalEnrollments,
-
+                'total' => $totalApplications,
                 'pending' => $pending,
-
                 'approved' => $approved,
-
                 'enrolled' => $enrolled,
-
-                'rejected' => $rejected,
-
+                'rejected' => $rejected
             ],
-
 
             'payments' => [
-
                 'paid' => $paid,
-
                 'unpaid' => $unpaid,
-
-                'failed' => $failed,
-
+                'failed' => $failed
             ],
 
-
-            'courses' => $courses,
-
+            'courses' => $courseSummary,
 
             'recent' => $recentEnrollments,
 
+            'paymentSummary' => $paymentSummary
         ]);
     }
 
+    public function students()
+    {
+        $students = Student::orderBy('last_name')
+            ->orderBy('first_name')
+            ->get();
 
-    /*
-    |--------------------------------------------------------------------------
-    | Enrollment Report
-    |--------------------------------------------------------------------------
-    */
+        return response()->json([
+            'students' => $students
+        ]);
+    }
 
     public function enrollmentReport()
     {
@@ -164,66 +91,34 @@ class RegistrarReportController extends Controller
         ->latest()
         ->get();
 
-
         return response()->json([
-            'report' => 'Enrollment Report',
-            'generated_at' => now(),
-            'total' => $enrollments->count(),
-            'data' => $enrollments
+            'enrollments' => $enrollments
         ]);
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Course Report
-    |--------------------------------------------------------------------------
-    */
 
     public function courseReport()
     {
-        $courses = Course::withCount([
-            'enrollments'
-        ])
-        ->orderBy(
-            'enrollments_count',
-            'desc'
-        )
-        ->get();
-
+        $courses = Enrollment::with('course')
+            ->selectRaw('course_id, COUNT(*) as total')
+            ->groupBy('course_id')
+            ->get();
 
         return response()->json([
-            'report' => 'Course Report',
-            'generated_at' => now(),
-            'data' => $courses
+            'courses' => $courses
         ]);
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Assessment / Payment Report
-    |--------------------------------------------------------------------------
-    */
-
     public function assessmentReport()
     {
-        $payments = Payment::with([
+        $assessments = Assessment::with([
             'enrollment.student',
             'enrollment.course'
         ])
         ->latest()
         ->get();
 
-
         return response()->json([
-            'report' => 'Assessment Report',
-            'generated_at' => now(),
-            'total' => $payments->count(),
-            'paid' => $payments->where('status', 'Paid')->count(),
-            'pending' => $payments->where('status', 'Pending')->count(),
-            'failed' => $payments->where('status', 'Failed')->count(),
-            'data' => $payments
+            'assessments' => $assessments
         ]);
     }
 }

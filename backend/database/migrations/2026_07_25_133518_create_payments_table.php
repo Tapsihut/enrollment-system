@@ -6,44 +6,36 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
-public function up()
-{
-    Schema::create('payments', function (Blueprint $table) {
+    public function up()
+    {
+        Schema::create('payments', function (Blueprint $table) {
+            $table->id();
 
-        $table->id();
+            $table->foreignId('enrollment_id')
+                ->constrained()
+                ->cascadeOnDelete();
 
-        $table->foreignId('enrollment_id')
-            ->constrained()
-            ->cascadeOnDelete();
+            $table->string('payment_reference')
+                ->nullable();
 
-        $table->string('payment_reference')
-            ->nullable();
+            $table->string('paymongo_payment_id')
+                ->nullable();
 
-        $table->decimal('amount',10,2);
+            $table->decimal('amount', 10, 2);
 
-        $table->enum('status',[
-            'Pending',
-            'Paid',
-            'Failed'
-        ])
-        ->default('Pending');
+            $table->enum('status', [
+                'Pending',
+                'Paid',
+                'Failed'
+            ])->default('Pending');
 
+            $table->string('payment_method')
+                ->nullable();
 
-        $table->string('payment_method')
-            ->nullable();
+            $table->timestamps();
+        });
+    }
 
-
-        $table->timestamps();
-
-    });
-}
-
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('payments');
