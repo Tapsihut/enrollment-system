@@ -184,7 +184,7 @@
             <div class="col-md-6">
                 <label>Year Level</label>
                 <select class="form-select" v-model="model.year_level"
-                    :disabled="model.student_type === 'Freshmen'">
+                    :enabled="model.student_type === 'Freshmen'">
                     <option value="">Select Year Level</option>
                     <option value="1">1st Year</option>
                     <option value="2">2nd Year</option>
