@@ -39,5 +39,32 @@ return [
     'secret' => env('PAYMONGO_SECRET_KEY'),
     'public' => env('PAYMONGO_PUBLIC_KEY'),
 ],
+'security_bank' => [
+
+    'base_url' => env(
+        'SECURITY_BANK_BASE_URL'
+    ),
+
+    'client_id' => env(
+        'SECURITY_BANK_CLIENT_ID'
+    ),
+
+    'client_secret' => env(
+        'SECURITY_BANK_CLIENT_SECRET'
+    ),
+
+    'merchant_id' => env(
+        'SECURITY_BANK_MERCHANT_ID'
+    ),
+
+    'api_key' => env(
+        'SECURITY_BANK_API_KEY'
+    ),
+
+    'callback_url' => env(
+        'SECURITY_BANK_CALLBACK_URL'
+    ),
+
+],
 
 ];

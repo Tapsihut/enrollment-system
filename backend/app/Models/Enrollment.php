@@ -12,7 +12,7 @@ use App\Models\Guardian;
 use App\Models\AcademicBackground;
 use App\Models\StudentDocument;
 use App\Models\Payment;
-use App\Models\Subject;
+use App\Models\EnrollmentDocumentRequirement;
 
 class Enrollment extends Model
 {
@@ -23,83 +23,40 @@ class Enrollment extends Model
         'school_year_id',
         'semester_id',
         'year_level',
+        'schedule_preference',
         'status',
-        'payment_status',
         'rejection_reason',
         'rejected_at',
     ];
 
-
     protected $casts = [
         'rejected_at' => 'datetime',
     ];
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Student
-    |--------------------------------------------------------------------------
-    */
 
     public function student()
     {
         return $this->belongsTo(Student::class);
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Course
-    |--------------------------------------------------------------------------
-    */
-
     public function course()
     {
         return $this->belongsTo(Course::class);
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Curriculum
-    |--------------------------------------------------------------------------
-    */
 
     public function curriculum()
     {
         return $this->belongsTo(Curriculum::class);
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | School Year
-    |--------------------------------------------------------------------------
-    */
-
     public function schoolYear()
     {
         return $this->belongsTo(SchoolYear::class);
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Semester
-    |--------------------------------------------------------------------------
-    */
-
     public function semester()
     {
         return $this->belongsTo(Semester::class);
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Guardian
-    |--------------------------------------------------------------------------
-    */
 
     public function guardian()
     {
@@ -110,13 +67,6 @@ class Enrollment extends Model
         );
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Academic Background
-    |--------------------------------------------------------------------------
-    */
-
     public function academicBackground()
     {
         return $this->hasOne(
@@ -125,13 +75,6 @@ class Enrollment extends Model
             'student_id'
         );
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Documents
-    |--------------------------------------------------------------------------
-    */
 
     public function documents()
     {
@@ -142,32 +85,15 @@ class Enrollment extends Model
         );
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Payment
-    |--------------------------------------------------------------------------
-    */
-
     public function payment()
     {
-        return $this->hasOne(
-            Payment::class
-        );
+        return $this->hasOne(Payment::class);
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Subjects
-    |--------------------------------------------------------------------------
-    */
-
-    public function subjects()
+    public function documentRequirements()
     {
-        return $this->belongsToMany(
-            Subject::class,
-            'enrollment_subjects'
+        return $this->hasMany(
+            EnrollmentDocumentRequirement::class
         );
     }
 }

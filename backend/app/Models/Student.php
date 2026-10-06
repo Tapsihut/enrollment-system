@@ -10,7 +10,6 @@ class Student extends Model
     use HasFactory;
 
     protected $fillable = [
-
         'user_id',
         'student_number',
         'first_name',
@@ -25,13 +24,10 @@ class Student extends Model
         'email',
         'address',
         'student_type',
-
     ];
 
     protected $casts = [
-
         'birth_date' => 'date',
-
     ];
 
     public function user()
@@ -48,10 +44,9 @@ class Student extends Model
     {
         return $this->hasMany(Enrollment::class);
     }
-public function documents()
-{
-    return $this->hasMany(
-        StudentDocument::class
-    );
-}
+
+    public function documents()
+    {
+        return $this->hasMany(StudentDocument::class);
+    }
 }

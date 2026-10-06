@@ -38,11 +38,11 @@ return new class extends Migration
             $table->integer('year_level');
 
             $table->enum('status', [
-                'Pending',
-                'Approved',
-                'Rejected',
-                'Paid',
-                'Enrolled'
+                'Pending', 
+                'Paid', 
+                'Processing', 
+                'Rejected', 
+                'Completed'
             ])->default('Pending');
 
             // Rejection information

@@ -13,29 +13,57 @@ class PayMongoWebhookController extends Controller
     {
         $payload = $request->all();
 
-        Log::info('PayMongo Webhook Received', $payload);
+        Log::info('PAYMONGO WEBHOOK RECEIVED', [
+            'payload' => $payload
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Get event type
+        |--------------------------------------------------------------------------
+        */
 
         $event = $payload['data']['attributes']['type'] ?? null;
 
         if (!$event) {
+            Log::warning('PAYMONGO WEBHOOK INVALID EVENT');
+
             return response()->json([
                 'message' => 'Invalid webhook.'
             ], 400);
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Only process successful payment events
+        |--------------------------------------------------------------------------
+        */
+
         if (
             $event !== 'checkout_session.payment.paid' &&
             $event !== 'payment.paid'
         ) {
+            Log::info('PAYMONGO EVENT IGNORED', [
+                'event' => $event
+            ]);
+
             return response()->json([
                 'message' => 'Event ignored.',
                 'event' => $event
             ], 200);
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Get resource
+        |--------------------------------------------------------------------------
+        */
+
         $resource = $payload['data']['attributes']['data'] ?? null;
 
         if (!$resource) {
+            Log::warning('PAYMONGO WEBHOOK PAYMENT DATA MISSING');
+
             return response()->json([
                 'message' => 'Payment data missing.'
             ], 400);
@@ -45,6 +73,8 @@ class PayMongoWebhookController extends Controller
         $attributes = $resource['attributes'] ?? [];
 
         if (!$resourceId) {
+            Log::warning('PAYMONGO WEBHOOK RESOURCE ID MISSING');
+
             return response()->json([
                 'message' => 'Payment reference missing.'
             ], 400);
@@ -52,26 +82,24 @@ class PayMongoWebhookController extends Controller
 
         /*
         |--------------------------------------------------------------------------
+        | Metadata
+        |--------------------------------------------------------------------------
+        */
+
+        $metadata = $attributes['metadata'] ?? [];
+
+        $localPaymentId = $metadata['local_payment_id'] ?? null;
+        $enrollmentId = $metadata['enrollment_id'] ?? null;
+
+        /*
+        |--------------------------------------------------------------------------
         | payment.paid
         |--------------------------------------------------------------------------
-        |
-        | This event contains the actual PayMongo Payment ID:
-        |
-        | pay_XXXXXXXX
-        |
         */
 
         if ($event === 'payment.paid') {
 
             $paymongoPaymentId = $resourceId;
-
-            $metadata = $attributes['metadata'] ?? [];
-
-            $localPaymentId =
-                $metadata['local_payment_id'] ?? null;
-
-            $enrollmentId =
-                $metadata['enrollment_id'] ?? null;
 
             Log::info('PAYMONGO PAYMENT DATA', [
                 'paymongo_payment_id' => $paymongoPaymentId,
@@ -79,40 +107,109 @@ class PayMongoWebhookController extends Controller
                 'enrollment_id' => $enrollmentId
             ]);
 
+            /*
+            |--------------------------------------------------------------------------
+            | Find local payment
+            |--------------------------------------------------------------------------
+            */
+
             $payment = null;
+
+            /*
+            | 1. Find using local payment ID
+            */
 
             if ($localPaymentId) {
                 $payment = Payment::find($localPaymentId);
             }
 
-            if (!$payment && $paymongoPaymentId) {
+            /*
+            | 2. Find using PayMongo payment ID
+            */
+
+            if (!$payment) {
                 $payment = Payment::where(
                     'paymongo_payment_id',
                     $paymongoPaymentId
                 )->latest()->first();
             }
 
+            /*
+            | 3. Find using enrollment ID
+            */
+
+            if (!$payment && $enrollmentId) {
+                $payment = Payment::where(
+                    'enrollment_id',
+                    $enrollmentId
+                )
+                ->where('status', 'Pending')
+                ->latest()
+                ->first();
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Payment not found
+            |--------------------------------------------------------------------------
+            */
+
             if (!$payment) {
 
-                Log::warning(
-                    'PAYMONGO PAYMENT NOT FOUND',
-                    [
-                        'paymongo_payment_id' => $paymongoPaymentId,
-                        'local_payment_id' => $localPaymentId,
-                        'enrollment_id' => $enrollmentId
-                    ]
-                );
+                Log::warning('PAYMONGO PAYMENT NOT FOUND', [
+                    'paymongo_payment_id' => $paymongoPaymentId,
+                    'local_payment_id' => $localPaymentId,
+                    'enrollment_id' => $enrollmentId
+                ]);
 
                 return response()->json([
                     'message' => 'Payment event received but local payment was not found.'
                 ], 200);
             }
 
+            /*
+            |--------------------------------------------------------------------------
+            | Already processed
+            |--------------------------------------------------------------------------
+            */
+
             if ($payment->status === 'Paid') {
+
+                if (
+                    !$payment->paymongo_payment_id &&
+                    $paymongoPaymentId
+                ) {
+                    $payment->update([
+                        'paymongo_payment_id' => $paymongoPaymentId
+                    ]);
+                }
+
+                /*
+                | Make sure enrollment is also Paid.
+                */
+
+                Enrollment::where(
+                    'id',
+                    $payment->enrollment_id
+                )->update([
+                    'status' => 'Paid'
+                ]);
+
+                Log::info('PAYMONGO PAYMENT ALREADY PROCESSED', [
+                    'payment_id' => $payment->id,
+                    'event' => $event
+                ]);
+
                 return response()->json([
                     'message' => 'Payment already processed.'
                 ], 200);
             }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Mark payment as Paid
+            |--------------------------------------------------------------------------
+            */
 
             $payment->update([
                 'status' => 'Paid',
@@ -120,29 +217,31 @@ class PayMongoWebhookController extends Controller
                 'paymongo_payment_id' => $paymongoPaymentId
             ]);
 
+            /*
+            |--------------------------------------------------------------------------
+            | Mark enrollment as Paid
+            |--------------------------------------------------------------------------
+            */
+
             Enrollment::where(
                 'id',
                 $payment->enrollment_id
             )->update([
-                'status' => 'Enrolled'
+                'status' => 'Paid'
             ]);
 
-            Log::info(
-                'Enrollment payment successfully confirmed.',
-                [
-                    'payment_id' =>
-                        $payment->id,
+            /*
+            |--------------------------------------------------------------------------
+            | Log success
+            |--------------------------------------------------------------------------
+            */
 
-                    'enrollment_id' =>
-                        $payment->enrollment_id,
-
-                    'paymongo_payment_id' =>
-                        $paymongoPaymentId,
-
-                    'paymongo_reference' =>
-                        $payment->payment_reference
-                ]
-            );
+            Log::info('PAYMONGO PAYMENT MARKED PAID', [
+                'payment_id' => $payment->id,
+                'enrollment_id' => $payment->enrollment_id,
+                'paymongo_payment_id' => $paymongoPaymentId,
+                'event' => $event
+            ]);
 
             return response()->json([
                 'message' => 'Payment successfully confirmed.'
@@ -157,16 +256,7 @@ class PayMongoWebhookController extends Controller
 
         $checkoutId = $resourceId;
 
-        $metadata = $attributes['metadata'] ?? [];
-
-        $localPaymentId =
-            $metadata['local_payment_id'] ?? null;
-
-        $enrollmentId =
-            $metadata['enrollment_id'] ?? null;
-
-        $payments =
-            $attributes['payments'] ?? [];
+        $payments = $attributes['payments'] ?? [];
 
         $paymongoPaymentId =
             $payments[0]['id'] ?? null;
@@ -180,15 +270,23 @@ class PayMongoWebhookController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Find Local Payment
+        | Find local payment
         |--------------------------------------------------------------------------
         */
 
         $payment = null;
 
+        /*
+        | 1. Find using local payment ID
+        */
+
         if ($localPaymentId) {
             $payment = Payment::find($localPaymentId);
         }
+
+        /*
+        | 2. Find using checkout session ID
+        */
 
         if (!$payment) {
             $payment = Payment::where(
@@ -196,6 +294,10 @@ class PayMongoWebhookController extends Controller
                 $checkoutId
             )->latest()->first();
         }
+
+        /*
+        | 3. Find using enrollment ID
+        */
 
         if (!$payment && $enrollmentId) {
             $payment = Payment::where(
@@ -207,17 +309,20 @@ class PayMongoWebhookController extends Controller
             ->first();
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Payment not found
+        |--------------------------------------------------------------------------
+        */
+
         if (!$payment) {
 
-            Log::warning(
-                'PAYMONGO CHECKOUT PAYMENT NOT FOUND',
-                [
-                    'checkout_id' => $checkoutId,
-                    'local_payment_id' => $localPaymentId,
-                    'enrollment_id' => $enrollmentId,
-                    'paymongo_payment_id' => $paymongoPaymentId
-                ]
-            );
+            Log::warning('PAYMONGO CHECKOUT PAYMENT NOT FOUND', [
+                'checkout_id' => $checkoutId,
+                'local_payment_id' => $localPaymentId,
+                'enrollment_id' => $enrollmentId,
+                'paymongo_payment_id' => $paymongoPaymentId
+            ]);
 
             return response()->json([
                 'message' => 'Payment not found.'
@@ -226,15 +331,14 @@ class PayMongoWebhookController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Prevent Duplicate Processing
+        | Already processed
         |--------------------------------------------------------------------------
         */
 
         if ($payment->status === 'Paid') {
 
             /*
-            | Even if already Paid, make sure the PayMongo
-            | payment ID is stored.
+            | Store PayMongo payment ID if it is not already stored.
             */
 
             if (
@@ -242,10 +346,25 @@ class PayMongoWebhookController extends Controller
                 $paymongoPaymentId
             ) {
                 $payment->update([
-                    'paymongo_payment_id' =>
-                        $paymongoPaymentId
+                    'paymongo_payment_id' => $paymongoPaymentId
                 ]);
             }
+
+            /*
+            | Make sure enrollment is also Paid.
+            */
+
+            Enrollment::where(
+                'id',
+                $payment->enrollment_id
+            )->update([
+                'status' => 'Paid'
+            ]);
+
+            Log::info('PAYMONGO PAYMENT ALREADY PROCESSED', [
+                'payment_id' => $payment->id,
+                'event' => $event
+            ]);
 
             return response()->json([
                 'message' => 'Payment already processed.'
@@ -254,7 +373,7 @@ class PayMongoWebhookController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Mark Payment Paid
+        | Mark payment as Paid
         |--------------------------------------------------------------------------
         */
 
@@ -266,7 +385,7 @@ class PayMongoWebhookController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Mark Enrollment Enrolled
+        | Mark enrollment as Paid
         |--------------------------------------------------------------------------
         */
 
@@ -274,35 +393,25 @@ class PayMongoWebhookController extends Controller
             'id',
             $payment->enrollment_id
         )->update([
-            'status' => 'Enrolled'
+            'status' => 'Paid'
         ]);
 
         /*
         |--------------------------------------------------------------------------
-        | Log Successful Payment
+        | Log successful payment
         |--------------------------------------------------------------------------
         */
 
-        Log::info(
-            'Enrollment payment successfully confirmed.',
-            [
-                'payment_id' =>
-                    $payment->id,
-
-                'enrollment_id' =>
-                    $payment->enrollment_id,
-
-                'paymongo_reference' =>
-                    $checkoutId,
-
-                'paymongo_payment_id' =>
-                    $paymongoPaymentId
-            ]
-        );
+        Log::info('PAYMONGO PAYMENT MARKED PAID', [
+            'payment_id' => $payment->id,
+            'enrollment_id' => $payment->enrollment_id,
+            'paymongo_payment_id' => $paymongoPaymentId,
+            'event' => $event
+        ]);
 
         return response()->json([
-            'message' =>
-                'Payment successfully confirmed.'
+            'message' => 'Payment successfully confirmed.'
         ], 200);
     }
 }
+

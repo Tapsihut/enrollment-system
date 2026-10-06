@@ -1,115 +1,227 @@
 <template>
-    <div>
+    <div class="student-type-page">
 
-        <h4 class="step-title">
-            Step 1 - Student Type
-        </h4>
+        <!-- ================= PAGE HEADER ================= -->
 
-        <p class="text-muted mb-4">
-            Select the type of enrollment that best describes you.
-        </p>
+        <div class="page-header">
 
-        <div class="row g-4">
-<!-- Freshmen -->
-<div class="col-md-6">
+            <div class="step-badge">
+                <i class="bi bi-mortarboard-fill"></i>
+                Step 1
+            </div>
 
-    <div
-        class="type-card"
-        :class="{ active: model.student_type === 'Freshmen' }"
-        @click="selectType('Freshmen')"
-    >
+            <h3>
+                Student Type
+            </h3>
 
-        <i class="bi bi-mortarboard-fill icon"></i>
+            <p>
+                Select the type of enrollment that best describes you.
+            </p>
 
-        <h5>Freshmen</h5>
-
-        <p>
-            First time entering college.
-        </p>
-
-    </div>
-
-</div>
+        </div>
 
 
+        <!-- ================= STUDENT TYPE ================= -->
 
-<!-- Transferee -->
-<div class="col-md-6">
+        <div class="section-card">
 
-    <div
-        class="type-card"
-        :class="{ active: model.student_type === 'Transferee' }"
-        @click="selectType('Transferee')"
-    >
+            <div class="section-title">
 
-        <i class="bi bi-arrow-left-right icon"></i>
+                <i class="bi bi-person-badge-fill"></i>
 
-        <h5>Transferee</h5>
+                <div>
+                    <span>Enrollment Type</span>
 
-        <p>
-            Coming from another college or university.
-        </p>
+                    <small>
+                        Select your current student status
+                    </small>
+                </div>
 
-    </div>
-
-</div>
+            </div>
 
 
+            <!-- ================= OPTIONS ================= -->
 
-<!-- Continuing -->
-<div class="col-md-6">
+            <div class="row">
 
-    <div
-        class="type-card"
-        :class="{ active: model.student_type === 'Continuing' }"
-        @click="selectType('Continuing')"
-    >
+                <!-- FRESHMEN -->
 
-        <i class="bi bi-book-fill icon"></i>
+                <div class="col-md-6 mb-3">
 
-        <h5>Continuing</h5>
+                    <div
+                        class="type-card"
+                        :class="{
+                            active: model.student_type === 'Freshmen'
+                        }"
+                        @click="selectType('Freshmen')"
+                    >
 
-        <p>
-            Currently enrolled student.
-        </p>
+                        <div class="type-icon">
 
-    </div>
+                            <i class="bi bi-mortarboard-fill"></i>
 
-</div>
+                        </div>
+
+                        <div class="type-content">
+
+                            <h5>
+                                Freshmen
+                            </h5>
+
+                            <p>
+                                First time entering college.
+                            </p>
+
+                        </div>
 
 
+                        <div
+                            v-if="model.student_type === 'Freshmen'"
+                            class="selected-indicator"
+                        >
 
-<!-- Returnee -->
-<div class="col-md-6">
+                            <i class="bi bi-check-circle-fill"></i>
 
-    <div
-        class="type-card"
-        :class="{ active: model.student_type === 'Returnee' }"
-        @click="selectType('Returnee')"
-    >
+                            Selected
 
-        <i class="bi bi-arrow-repeat icon"></i>
+                        </div>
 
-        <h5>Returnee</h5>
+                    </div>
 
-        <p>
-            Returning after stopping enrollment.
-        </p>
+                </div>
 
-    </div>
 
-</div>
+                <!-- TRANSFEREE -->
+
+                <div class="col-md-6 mb-3">
+
+                    <div class="type-card disabled">
+
+                        <div class="type-icon">
+
+                            <i class="bi bi-arrow-left-right"></i>
+
+                        </div>
+
+                        <div class="type-content">
+
+                            <h5>
+                                Transferee
+                            </h5>
+
+                            <p>
+                                Coming from another college or university.
+                            </p>
+
+                        </div>
+
+
+                        <div class="unavailable-indicator">
+
+                            Currently unavailable
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- CONTINUING -->
+
+                <div class="col-md-6 mb-3">
+
+                    <div
+                        class="type-card"
+                        :class="{
+                            active: model.student_type === 'Continuing'
+                        }"
+                        @click="selectType('Continuing')"
+                    >
+
+                        <div class="type-icon">
+
+                            <i class="bi bi-book-fill"></i>
+
+                        </div>
+
+                        <div class="type-content">
+
+                            <h5>
+                                Continuing
+                            </h5>
+
+                            <p>
+                                Currently enrolled student.
+                            </p>
+
+                        </div>
+
+
+                        <div
+                            v-if="model.student_type === 'Continuing'"
+                            class="selected-indicator"
+                        >
+
+                            <i class="bi bi-check-circle-fill"></i>
+
+                            Selected
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- RETURNEE -->
+
+                <div class="col-md-6 mb-3">
+
+                    <div class="type-card disabled">
+
+                        <div class="type-icon">
+
+                            <i class="bi bi-arrow-repeat"></i>
+
+                        </div>
+
+                        <div class="type-content">
+
+                            <h5>
+                                Returnee
+                            </h5>
+
+                            <p>
+                                Returning after stopping enrollment.
+                            </p>
+
+                        </div>
+
+
+                        <div class="unavailable-indicator">
+
+                            Currently unavailable
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
 
         </div>
 
     </div>
 </template>
 
+
 <script setup>
+
 const model = defineModel()
 
-
-function selectType(type){
+function selectType(type) {
 
     model.value.student_type = type
 
@@ -119,85 +231,775 @@ function selectType(type){
     )
 
 }
+
 </script>
+
 
 <style scoped>
 
-.step-title{
+* {
+    box-sizing: border-box;
+}
 
-    color:#064E2A;
 
-    font-weight:800;
+/* =========================================================
+   PAGE
+========================================================= */
+
+.student-type-page {
+    width: 100%;
+    max-width: 100%;
+    padding: 10px;
+    overflow-x: hidden;
+}
+
+
+/* =========================================================
+   PAGE HEADER
+========================================================= */
+
+.page-header {
+    margin-bottom: 25px;
+}
+
+
+/* STEP BADGE */
+
+.step-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    background: #E8F5EE;
+    color: #064E2A;
+
+    border-radius: 999px;
+
+    padding: 6px 12px;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    margin-bottom: 10px;
+}
+
+
+/* TITLE */
+
+.page-header h3 {
+    font-weight: 800;
+    color: #064E2A;
+
+    margin-bottom: 6px;
+
+    font-size: 27px;
+}
+
+
+/* DESCRIPTION */
+
+.page-header p {
+    color: #6B7280;
+
+    margin: 0;
+
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   SECTION CARD
+========================================================= */
+
+.section-card {
+    background: white;
+
+    border-radius: 22px;
+
+    padding: 30px;
+
+    margin-bottom: 25px;
+
+    box-shadow: 0 10px 30px rgba(0,0,0,.06);
+
+    border: 1px solid #E5E7EB;
+}
+
+
+/* =========================================================
+   SECTION TITLE
+========================================================= */
+
+.section-title {
+
+    background: linear-gradient(
+        135deg,
+        #064E2A,
+        #0B6B3A
+    );
+
+    color: white;
+
+    padding: 14px 18px;
+
+    border-radius: 12px;
+
+    font-size: 18px;
+
+    font-weight: 700;
+
+    margin-bottom: 25px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
 
 }
 
-.type-card{
+.section-title i {
 
-    border:2px solid #E5E7EB;
+    font-size: 20px;
 
-    border-radius:18px;
-
-    padding:30px;
-
-    cursor:pointer;
-
-    transition:.3s;
-
-    text-align:center;
-
-    height:100%;
-
-    background:white;
+    flex-shrink: 0;
 
 }
 
-.type-card:hover{
+.section-title div {
 
-    border-color:#0B6B3A;
+    display: flex;
 
-    transform:translateY(-5px);
-
-    box-shadow:0 10px 25px rgba(0,0,0,.08);
+    flex-direction: column;
 
 }
 
-.type-card.active{
+.section-title small {
 
-    background:#0B6B3A;
+    font-size: 11px;
 
-    color:white;
+    font-weight: 400;
 
-    border-color:#0B6B3A;
+    opacity: .8;
 
-}
-
-.icon{
-
-    font-size:40px;
-
-    color:#0B6B3A;
-
-    margin-bottom:15px;
+    margin-top: 2px;
 
 }
 
-.type-card.active .icon{
 
-    color:white;
+/* =========================================================
+   TYPE CARD
+========================================================= */
+
+.type-card {
+
+    position: relative;
+
+    background: white;
+
+    border: 2px solid #E5E7EB;
+
+    border-radius: 16px;
+
+    padding: 25px 20px;
+
+    min-height: 190px;
+
+    height: 100%;
+
+    cursor: pointer;
+
+    transition: .25s;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    text-align: center;
 
 }
 
-.type-card h5{
 
-    font-weight:700;
+/* HOVER */
+
+.type-card:hover {
+
+    border-color: #0B6B3A;
+
+    transform: translateY(-3px);
+
+    box-shadow: 0 8px 20px rgba(0,0,0,.07);
 
 }
 
-.type-card p{
 
-    margin:0;
+/* ACTIVE */
 
-    opacity:.8;
+.type-card.active {
+
+    background: #F0FDF4;
+
+    border-color: #0B6B3A;
+
+    box-shadow: 0 8px 20px rgba(11,107,58,.10);
+
+}
+
+
+/* =========================================================
+   TYPE ICON
+========================================================= */
+
+.type-icon {
+
+    width: 58px;
+
+    height: 58px;
+
+    border-radius: 14px;
+
+    background: #E8F5EE;
+
+    color: #0B6B3A;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    margin-bottom: 12px;
+
+    font-size: 29px;
+
+    transition: .25s;
+
+}
+
+.type-card.active .type-icon {
+
+    background: #0B6B3A;
+
+    color: white;
+
+}
+
+
+/* =========================================================
+   TYPE CONTENT
+========================================================= */
+
+.type-content h5 {
+
+    font-weight: 700;
+
+    color: #1F2937;
+
+    margin: 0 0 5px;
+
+    font-size: 17px;
+
+}
+
+.type-card.active .type-content h5 {
+
+    color: #064E2A;
+
+}
+
+.type-content p {
+
+    color: #6B7280;
+
+    margin: 0;
+
+    font-size: 13px;
+
+    line-height: 1.45;
+
+}
+
+.type-card.active .type-content p {
+
+    color: #4B6356;
+
+}
+
+
+/* =========================================================
+   SELECTED INDICATOR
+========================================================= */
+
+.selected-indicator {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 5px;
+
+    margin-top: 12px;
+
+    color: #0B6B3A;
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+}
+
+.selected-indicator i {
+
+    font-size: 13px;
+
+}
+
+
+/* =========================================================
+   DISABLED
+========================================================= */
+
+.type-card.disabled {
+
+    opacity: .55;
+
+    cursor: not-allowed;
+
+    background: #F3F4F6;
+
+    border-color: #D1D5DB;
+
+    filter: grayscale(30%);
+
+}
+
+
+.type-card.disabled:hover {
+
+    border-color: #D1D5DB;
+
+    transform: none;
+
+    box-shadow: none;
+
+}
+
+
+.type-card.disabled .type-icon {
+
+    background: #E5E7EB;
+
+    color: #6B7280;
+
+}
+
+
+.type-card.disabled .type-content h5 {
+
+    color: #4B5563;
+
+}
+
+
+.type-card.disabled .type-content p {
+
+    color: #6B7280;
+
+}
+
+
+/* =========================================================
+   UNAVAILABLE
+========================================================= */
+
+.unavailable-indicator {
+
+    margin-top: 12px;
+
+    padding: 4px 9px;
+
+    border-radius: 999px;
+
+    background: #E5E7EB;
+
+    color: #6B7280;
+
+    font-size: 10px;
+
+    font-weight: 600;
+
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media(max-width:768px) {
+
+    .student-type-page {
+
+        padding: 6px;
+
+    }
+
+
+    .page-header {
+
+        margin-bottom: 20px;
+
+    }
+
+
+    .page-header h3 {
+
+        font-size: 24px;
+
+    }
+
+
+    .page-header p {
+
+        font-size: 14px;
+
+    }
+
+
+    .section-card {
+
+        padding: 20px;
+
+        border-radius: 18px;
+
+        margin-bottom: 18px;
+
+    }
+
+
+    .section-title {
+
+        padding: 13px 15px;
+
+        font-size: 16px;
+
+        margin-bottom: 20px;
+
+    }
+
+
+    .type-card {
+
+        min-height: 165px;
+
+        padding: 20px 15px;
+
+        border-radius: 14px;
+
+    }
+
+
+    .type-icon {
+
+        width: 50px;
+
+        height: 50px;
+
+        font-size: 25px;
+
+        margin-bottom: 9px;
+
+    }
+
+
+    .type-content h5 {
+
+        font-size: 15px;
+
+    }
+
+
+    .type-content p {
+
+        font-size: 12px;
+
+    }
+
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media(max-width:576px) {
+
+    .student-type-page {
+
+        padding: 2px;
+
+    }
+
+
+    .page-header {
+
+        margin: 2px 4px 18px;
+
+    }
+
+
+    .step-badge {
+
+        font-size: 11px;
+
+        padding: 5px 10px;
+
+        margin-bottom: 8px;
+
+    }
+
+
+    .page-header h3 {
+
+        font-size: 21px;
+
+        line-height: 1.25;
+
+        margin-bottom: 5px;
+
+    }
+
+
+    .page-header p {
+
+        font-size: 13px;
+
+        line-height: 1.5;
+
+    }
+
+
+    /* ================= CARD ================= */
+
+    .section-card {
+
+        padding: 14px;
+
+        border-radius: 16px;
+
+        margin-bottom: 14px;
+
+        box-shadow: 0 5px 18px rgba(0,0,0,.05);
+
+    }
+
+
+    /* ================= SECTION TITLE ================= */
+
+    .section-title {
+
+        padding: 11px 13px;
+
+        border-radius: 11px;
+
+        font-size: 15px;
+
+        margin-bottom: 17px;
+
+        gap: 9px;
+
+    }
+
+
+    .section-title i {
+
+        font-size: 18px;
+
+    }
+
+
+    .section-title small {
+
+        font-size: 10px;
+
+    }
+
+
+    /* ================= ROW ================= */
+
+    .row {
+
+        --bs-gutter-x: .7rem;
+
+        --bs-gutter-y: 0;
+
+    }
+
+
+    /* ================= TYPE CARD ================= */
+
+    .type-card {
+
+        min-height: 145px;
+
+        padding: 16px 10px;
+
+        border-radius: 12px;
+
+    }
+
+
+    .type-icon {
+
+        width: 44px;
+
+        height: 44px;
+
+        border-radius: 11px;
+
+        font-size: 22px;
+
+        margin-bottom: 8px;
+
+    }
+
+
+    .type-content h5 {
+
+        font-size: 14px;
+
+        margin-bottom: 4px;
+
+    }
+
+
+    .type-content p {
+
+        font-size: 11px;
+
+        line-height: 1.4;
+
+    }
+
+
+    .selected-indicator {
+
+        margin-top: 8px;
+
+        font-size: 10px;
+
+    }
+
+
+    .selected-indicator i {
+
+        font-size: 11px;
+
+    }
+
+
+    .unavailable-indicator {
+
+        margin-top: 8px;
+
+        padding: 3px 7px;
+
+        font-size: 9px;
+
+    }
+
+}
+
+
+/* =========================================================
+   VERY SMALL PHONES
+========================================================= */
+
+@media(max-width:380px) {
+
+    .section-card {
+
+        padding: 12px;
+
+        border-radius: 14px;
+
+    }
+
+
+    .page-header h3 {
+
+        font-size: 20px;
+
+    }
+
+
+    .section-title {
+
+        font-size: 14px;
+
+        padding: 10px 11px;
+
+    }
+
+
+    .section-title i {
+
+        font-size: 17px;
+
+    }
+
+
+    .type-card {
+
+        min-height: 130px;
+
+        padding: 13px 8px;
+
+    }
+
+
+    .type-icon {
+
+        width: 40px;
+
+        height: 40px;
+
+        font-size: 20px;
+
+        border-radius: 10px;
+
+    }
+
+
+    .type-content h5 {
+
+        font-size: 13px;
+
+    }
+
+
+    .type-content p {
+
+        font-size: 10px;
+
+    }
+
+
+    .selected-indicator {
+
+        font-size: 9px;
+
+    }
+
+
+    .unavailable-indicator {
+
+        font-size: 8px;
+
+    }
 
 }
 

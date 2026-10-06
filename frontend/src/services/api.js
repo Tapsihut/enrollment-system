@@ -1,52 +1,27 @@
 import axios from "axios"
 
-
 const api = axios.create({
-
-    baseURL:"http://localhost:8000/api",
-
-    headers:{
-        Accept:"application/json",
-        "Content-Type":"application/json"
-    }
-
+    baseURL: import.meta.env.VITE_API_URL || "http://192.168.1.3:8000/api",
+    headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+    },
 })
 
-
-
-// Attach token automatically
-
 api.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem("token")
 
-(config)=>{
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`
+        }
 
-
-const token = localStorage.getItem("token")
-
-
-if(token){
-
-    config.headers.Authorization =
-    `Bearer ${token}`
-
-}
-
-
-return config
-
-
-},
-
-
-(error)=>{
-
-return Promise.reject(error)
-
-}
-
-
+        return config
+    },
+    (error) => {
+        return Promise.reject(error)
+    }
 )
 
-
-
 export default api
+

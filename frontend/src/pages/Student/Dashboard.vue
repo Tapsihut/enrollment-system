@@ -1,870 +1,1855 @@
 <script setup>
-
-import { ref,onMounted } from "vue";
-import axios from "axios";
-
+import { ref, onMounted, onUnmounted } from "vue";
+import api from "@/services/api";
 
 const dashboard = ref({
-
-    enrollment_status: '',
-    subjects: 0,
-    enrollment_fee: 0,
-    payment_status: '',
-
+    enrollment_status: "No Enrollment",
+    enrollment_fee: 1500,
+    payment_status: "Not Available",
     progress: 0,
-
-    steps:{
-        profile:false,
-        enrollment:false,
-        approval:false,
-        payment:false,
-        completed:false
+    steps: {
+        profile: false,
+        enrollment: false,
+        payment: false,
+        processing: false,
+        completed: false
     }
-
 });
 
+let dashboardInterval = null;
 
-const loadDashboard = async()=>{
 
-    try{
+/*
+|--------------------------------------------------------------------------
+| LOAD DASHBOARD
+|--------------------------------------------------------------------------
+*/
 
-        const response = await axios.get(
-            "http://127.0.0.1:8000/api/student/dashboard",
-            {
-                headers:{
-                    Authorization:
-                    `Bearer ${localStorage.getItem("token")}`
-                }
-            }
+const loadDashboard = async () => {
+
+    try {
+
+        const response = await api.get(
+            "/student/dashboard"
         );
 
+        console.log(
+            "Dashboard Data:",
+            response.data
+        );
 
-        console.log("Dashboard Data:", response.data);
+        dashboard.value = {
 
-dashboard.value = response.data;
+            ...dashboard.value,
 
+            ...response.data,
+
+            steps: {
+                ...dashboard.value.steps,
+                ...(response.data.steps || {})
+            }
+
+        };
 
     }
-    catch(error){
+    catch (error) {
 
-        console.log(error);
+        console.log(
+            "Dashboard Error:",
+            error.response?.data || error
+        );
 
     }
 
-}
+};
 
 
+/*
+|--------------------------------------------------------------------------
+| LIFECYCLE
+|--------------------------------------------------------------------------
+*/
 
-onMounted(()=>{
+onMounted(() => {
 
+    // Load immediately
     loadDashboard();
+
+    // Refresh when returning to the tab
+    window.addEventListener(
+        "focus",
+        loadDashboard
+    );
+
+    // Check for status changes every 30 seconds
+    dashboardInterval = setInterval(() => {
+
+        loadDashboard();
+
+    }, 30000);
 
 });
 
 
+onUnmounted(() => {
+
+    window.removeEventListener(
+        "focus",
+        loadDashboard
+    );
+
+    if (dashboardInterval) {
+
+        clearInterval(
+            dashboardInterval
+        );
+
+        dashboardInterval = null;
+
+    }
+
+});
+
 </script>
+
+
 <template>
 
-<div class="dashboard">
+<div class="dashboard-page">
 
 
-<!-- HEADER -->
+    <!-- =====================================================
+         WELCOME HEADER
+    ====================================================== -->
 
-<div class="welcome-card mb-4">
+    <div class="welcome-card">
+
+        <div class="welcome-content">
+
+            <div class="welcome-badge">
+
+                <i class="bi bi-mortarboard-fill"></i>
+
+                Student Portal
+
+            </div>
 
 
-<div>
-
-<h2>
-
-Welcome, Student 👋
-
-</h2>
+            <h2>
+                Welcome, Student 👋
+            </h2>
 
 
-<p>
+            <p>
+                Manage your enrollment, payments,
+                and academic information.
+            </p>
 
-Manage your enrollment, payments, and academic information.
+        </div>
 
-</p>
+
+        <div class="school-badge">
+            SFXC
+        </div>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         OVERVIEW
+    ====================================================== -->
+
+    <div class="section-heading">
+
+        <div class="section-heading-icon">
+
+            <i class="bi bi-grid-1x2-fill"></i>
+
+        </div>
+
+        <div>
+
+            <h4>
+                Student Overview
+            </h4>
+
+            <p>
+                Your current enrollment and payment status
+            </p>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         OVERVIEW CARDS
+    ====================================================== -->
+
+    <div class="row g-3">
+
+
+        <!-- ENROLLMENT STATUS -->
+
+        <div class="col-12 col-md-4">
+
+            <div class="dashboard-card">
+
+                <div class="icon green">
+
+                    <i class="bi bi-journal-text"></i>
+
+                </div>
+
+
+                <div class="card-content">
+
+                    <h6>
+                        Enrollment Status
+                    </h6>
+
+
+                    <h4>
+                        {{
+                            dashboard.enrollment_status ||
+                            "No Enrollment"
+                        }}
+                    </h4>
+
+
+                    <span
+                        class="status-badge"
+                        :class="{
+
+                            pending:
+                                dashboard.enrollment_status === 'Pending',
+
+                            paid:
+                                dashboard.enrollment_status === 'Paid',
+
+                            processing:
+                                dashboard.enrollment_status === 'Processing',
+
+                            completed:
+                                dashboard.enrollment_status === 'Completed',
+
+                            rejected:
+                                dashboard.enrollment_status === 'Rejected',
+
+                            neutral:
+                                !dashboard.enrollment_status ||
+                                dashboard.enrollment_status === 'No Enrollment'
+
+                        }"
+                    >
+
+                        {{
+                            dashboard.enrollment_status ||
+                            "No Enrollment"
+                        }}
+
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- ENROLLMENT FEE -->
+
+        <div class="col-12 col-md-4">
+
+            <div class="dashboard-card">
+
+                <div class="icon gold">
+
+                    <i class="bi bi-wallet2"></i>
+
+                </div>
+
+
+                <div class="card-content">
+
+                    <h6>
+                        Enrollment Fee
+                    </h6>
+
+
+                    <h4>
+
+                        ₱{{
+                            Number(
+                                dashboard.enrollment_fee ?? 1500
+                            ).toLocaleString(
+                                "en-US",
+                                {
+                                    minimumFractionDigits: 2
+                                }
+                            )
+                        }}
+
+                    </h4>
+
+
+                    <span
+                        class="status-badge warning"
+                    >
+
+                        {{
+                            Number(
+                                dashboard.enrollment_fee ?? 0
+                            ) > 0
+                                ? "Required Fee"
+                                : "Payment Completed"
+                        }}
+
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- PAYMENT -->
+
+        <div class="col-12 col-md-4">
+
+            <div class="dashboard-card">
+
+                <div class="icon success">
+
+                    <i class="bi bi-credit-card-fill"></i>
+
+                </div>
+
+
+                <div class="card-content">
+
+                    <h6>
+                        Payment
+                    </h6>
+
+
+                    <h4>
+                        {{
+                            dashboard.payment_status ||
+                            "Not Available"
+                        }}
+                    </h4>
+
+
+                    <span
+                        class="status-badge"
+                        :class="{
+
+                            success:
+                                dashboard.payment_status === 'Paid',
+
+                            pending:
+                                dashboard.payment_status === 'Pending',
+
+                            danger:
+                                dashboard.payment_status === 'Failed' ||
+                                dashboard.payment_status === 'Rejected',
+
+                            neutral:
+                                !dashboard.payment_status ||
+                                dashboard.payment_status === 'Not Available'
+
+                        }"
+                    >
+
+                        {{
+                            dashboard.payment_status ||
+                            "Not Available"
+                        }}
+
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+
+    <!-- =====================================================
+         ENROLLMENT PROGRESS
+    ====================================================== -->
+
+    <div class="process-card">
+
+
+        <!-- CARD HEADER -->
+
+        <div class="process-header">
+
+            <div class="process-icon">
+
+                <i class="bi bi-list-check"></i>
+
+            </div>
+
+            <div>
+
+                <h4>
+                    Enrollment Progress
+                </h4>
+
+                <p>
+                    Track the progress of your enrollment
+                </p>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =================================================
+             PROGRESS BAR
+        ================================================== -->
+
+        <div class="progress-section">
+
+            <div class="progress-label">
+
+                <span>
+                    Overall Progress
+                </span>
+
+                <strong>
+                    {{ dashboard.progress }}%
+                </strong>
+
+            </div>
+
+
+            <div class="progress">
+
+                <div
+                    class="progress-bar"
+                    :style="{
+                        width: dashboard.progress + '%'
+                    }"
+                >
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =================================================
+             STEPS
+        ================================================== -->
+
+        <div class="steps">
+
+
+            <!-- PROFILE -->
+
+            <div
+                class="step"
+                :class="{
+                    active: dashboard.steps.profile
+                }"
+            >
+
+                <div class="step-number">
+
+                    <i
+                        v-if="dashboard.steps.profile"
+                        class="bi bi-check-lg"
+                    ></i>
+
+                    <span v-else>
+                        1
+                    </span>
+
+                </div>
+
+
+                <div class="step-content">
+
+                    <strong>
+                        Complete Profile
+                    </strong>
+
+                    <small>
+                        Personal information
+                    </small>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- ENROLLMENT -->
+
+            <div
+                class="step"
+                :class="{
+                    active: dashboard.steps.enrollment
+                }"
+            >
+
+                <div class="step-number">
+
+                    <i
+                        v-if="dashboard.steps.enrollment"
+                        class="bi bi-check-lg"
+                    ></i>
+
+                    <span v-else>
+                        2
+                    </span>
+
+                </div>
+
+
+                <div class="step-content">
+
+                    <strong>
+                        Submit Enrollment
+                    </strong>
+
+                    <small>
+                        Enrollment application
+                    </small>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- PAYMENT -->
+
+            <div
+                class="step"
+                :class="{
+                    active: dashboard.steps.payment
+                }"
+            >
+
+                <div class="step-number">
+
+                    <i
+                        v-if="dashboard.steps.payment"
+                        class="bi bi-check-lg"
+                    ></i>
+
+                    <span v-else>
+                        3
+                    </span>
+
+                </div>
+
+
+                <div class="step-content">
+
+                    <strong>
+                        Payment
+                    </strong>
+
+                    <small>
+                        Enrollment fee
+                    </small>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- PROCESSING -->
+
+            <div
+                class="step"
+                :class="{
+                    active: dashboard.steps.processing
+                }"
+            >
+
+                <div class="step-number">
+
+                    <i
+                        v-if="dashboard.steps.processing"
+                        class="bi bi-check-lg"
+                    ></i>
+
+                    <span v-else>
+                        4
+                    </span>
+
+                </div>
+
+
+                <div class="step-content">
+
+                    <strong>
+                        College Processing
+                    </strong>
+
+                    <small>
+                        Enrollment verification
+                    </small>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- COMPLETED -->
+
+            <div
+                class="step"
+                :class="{
+                    active: dashboard.steps.completed
+                }"
+            >
+
+                <div class="step-number">
+
+                    <i
+                        v-if="dashboard.steps.completed"
+                        class="bi bi-check-lg"
+                    ></i>
+
+                    <span v-else>
+                        5
+                    </span>
+
+                </div>
+
+
+                <div class="step-content">
+
+                    <strong>
+                        Completed
+                    </strong>
+
+                    <small>
+                        Study load available
+                    </small>
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+    </div>
 
 
 </div>
-
-
-
-<div class="school-badge">
-
-SFXC
-
-</div>
-
-
-</div>
-
-
-
-
-
-<h4 class="section-title">
-
-Student Overview
-
-</h4>
-
-
-
-
-<div class="row g-4">
-
-
-
-<!-- ENROLLMENT -->
-
-<div class="col-md-3">
-
-
-<div class="dashboard-card">
-
-
-<div class="icon green">
-
-<i class="bi bi-journal-text"></i>
-
-</div>
-
-
-
-<div>
-
-<h6>
-Enrollment Status
-</h6>
-
-
-<h4>
-{{ dashboard.enrollment_status }}
-</h4>
-
-
-<span class="badge pending">
-
-{{ dashboard.enrollment_status }}
-
-</span>
-
-
-</div>
-
-
-</div>
-
-
-</div>
-
-
-
-
-
-
-<!-- SUBJECTS -->
-
-<div class="col-md-3">
-
-
-<div class="dashboard-card">
-
-
-<div class="icon blue">
-
-<i class="bi bi-book"></i>
-
-</div>
-
-
-
-<div>
-
-<h6>
-Subjects
-</h6>
-
-<h4>
-{{ dashboard.subjects }}
-</h4>
-
-
-<span class="badge info">
-
-Assigned
-
-</span>
-
-
-</div>
-
-
-</div>
-
-
-</div>
-
-
-
-
-
-
-
-<!-- FEES -->
-
-<div class="col-md-3">
-
-
-<div class="dashboard-card">
-
-
-<div class="icon gold">
-
-<i class="bi bi-wallet"></i>
-
-</div>
-
-
-
-<div>
-
-<h6>
-Enrollment Fee
-</h6>
-
-<h4>
-₱{{ Number(dashboard.enrollment_fee).toLocaleString('en-US', {
-    minimumFractionDigits: 2
-}) }}
-</h4>
-
-<span class="badge warning">
-
-Balance
-
-</span>
-
-
-</div>
-
-
-</div>
-
-
-</div>
-
-
-
-
-
-
-
-
-<!-- PAYMENT -->
-
-<div class="col-md-3">
-
-
-<div class="dashboard-card">
-
-
-<div class="icon success">
-
-<i class="bi bi-check-circle"></i>
-
-</div>
-
-
-
-<div>
-
-<h6>
-Payment
-</h6>
-
-<h4>
-{{ dashboard.payment_status }}
-</h4>
-
-
-<span 
-class="badge"
-:class="dashboard.payment_status === 'Paid'
-? 'success'
-: 'danger'"
->
-
-{{ dashboard.payment_status }}
-
-</span>
-
-
-</div>
-
-
-</div>
-
-
-</div>
-
-
-
-
-</div>
-
-
-
-
-
-
-
-
-<!-- ENROLLMENT TRACKER -->
-
-<div class="process-card mt-5">
-
-
-<div class="card-title">
-
-Enrollment Progress
-
-</div>
-
-
-
-<div class="progress-wrapper">
-
-
-<div class="progress">
-
-
-<div
-
-class="progress-bar"
-
-:style="{
-width: dashboard.progress + '%'
-}"
-
->
-
-{{dashboard.progress}}%
-
-</div>
-
-</div>
-
-
-</div>
-
-
-
-
-
-
-<div class="steps">
-
-
-<div 
-class="step"
-:class="{active: dashboard.steps.profile}"
->
-
-<div>1</div>
-
-<span>
-Complete Profile
-</span>
-
-</div>
-
-
-
-<div 
-class="step"
-:class="{active: dashboard.steps.enrollment}"
->
-<div>2</div>
-<span>
-Submit Enrollment
-</span>
-</div>
-<div 
-class="step"
-:class="{active: dashboard.steps.approval}"
->
-<div>3</div>
-<span>
-Registrar Approval
-</span>
-</div>
-<div 
-class="step"
-:class="{active: dashboard.steps.payment}"
->
-
-<div>4</div>
-
-<span>
-Payment
-</span>
-</div>
-</div>
-
-
-</div>
-
-
-
-</div>
-
 
 </template>
 
 
-
-
-
-
 <style scoped>
 
-.badge.success{
+* {
+    box-sizing: border-box;
+}
 
-background:#d1fae5;
 
-color:#065f46;
+/* =========================================================
+   PAGE
+========================================================= */
+
+.dashboard-page {
+
+    width: 100%;
+
+    padding: 10px;
+
+    overflow-x: hidden;
 
 }
 
 
-.dashboard{
+/* =========================================================
+   WELCOME CARD
+========================================================= */
 
-padding:10px;
+.welcome-card {
 
-}
+    background: linear-gradient(
+        135deg,
+        #064E2A,
+        #0B6B3A
+    );
 
+    color: white;
 
+    padding: 30px;
 
+    border-radius: 22px;
 
-.welcome-card{
+    display: flex;
 
-background:
+    justify-content: space-between;
 
-linear-gradient(
+    align-items: center;
 
-135deg,
+    box-shadow:
+        0 10px 30px rgba(0,0,0,.10);
 
-#064E2A,
-
-#0B6B3A
-
-);
-
-color:white;
-
-padding:35px;
-
-border-radius:25px;
-
-display:flex;
-
-justify-content:space-between;
-
-align-items:center;
-
-box-shadow:0 15px 40px rgba(0,0,0,.15);
+    margin-bottom: 25px;
 
 }
 
 
+.welcome-content {
 
-.welcome-card h2{
-
-font-weight:800;
-
-}
-
-
-
-.welcome-card p{
-
-opacity:.8;
+    min-width: 0;
 
 }
 
 
+.welcome-badge {
 
+    display: inline-flex;
 
-.school-badge{
+    align-items: center;
 
-height:90px;
+    gap: 6px;
 
-width:90px;
+    background: rgba(255,255,255,.14);
 
-border-radius:50%;
+    border: 1px solid rgba(255,255,255,.18);
 
-background:#ffffff;
+    padding: 6px 11px;
 
-color:#0B6B3A;
+    border-radius: 999px;
 
-display:flex;
+    font-size: 11px;
 
-justify-content:center;
+    font-weight: 700;
 
-align-items:center;
-
-font-size:30px;
-
-font-weight:900;
-
-border:5px solid #9cffc8;
+    margin-bottom: 12px;
 
 }
 
 
+.welcome-card h2 {
 
+    font-size: 27px;
 
+    font-weight: 800;
 
-.section-title{
-
-font-weight:700;
-
-margin-bottom:20px;
-
-}
-
-
-
-
-.dashboard-card{
-
-background:white;
-
-border-radius:20px;
-
-padding:25px;
-
-display:flex;
-
-gap:20px;
-
-align-items:center;
-
-box-shadow:
-
-0 10px 30px rgba(0,0,0,.08);
-
-transition:.3s;
+    margin: 0 0 6px;
 
 }
 
 
+.welcome-card p {
 
-.dashboard-card:hover{
+    margin: 0;
 
-transform:translateY(-5px);
+    color: rgba(255,255,255,.78);
 
-}
-
-
-
-
-.icon{
-
-height:60px;
-
-width:60px;
-
-border-radius:15px;
-
-display:flex;
-
-align-items:center;
-
-justify-content:center;
-
-font-size:30px;
+    line-height: 1.5;
 
 }
 
 
+.school-badge {
 
+    width: 82px;
 
-.icon.green{
+    height: 82px;
 
-background:#dcfce7;
+    min-width: 82px;
 
-color:#0B6B3A;
+    border-radius: 50%;
 
-}
+    background: white;
 
+    color: #0B6B3A;
 
-.icon.blue{
+    display: flex;
 
-background:#dbeafe;
+    align-items: center;
 
-color:#2563eb;
+    justify-content: center;
 
-}
+    font-size: 27px;
 
+    font-weight: 900;
 
-.icon.gold{
-
-background:#fef3c7;
-
-color:#d97706;
-
-}
-
-
-.icon.success{
-
-background:#d1fae5;
-
-color:#059669;
+    border: 4px solid #9cffc8;
 
 }
 
 
+/* =========================================================
+   SECTION HEADING
+========================================================= */
 
+.section-heading {
 
+    display: flex;
 
-.dashboard-card h6{
+    align-items: center;
 
-color:#6b7280;
+    gap: 10px;
 
-margin:0;
-
-}
-
-
-
-.dashboard-card h4{
-
-font-weight:800;
-
-margin:5px 0;
+    margin: 0 0 15px;
 
 }
 
 
+.section-heading-icon {
 
+    width: 38px;
 
+    height: 38px;
 
-.badge{
+    min-width: 38px;
 
-padding:6px 12px;
+    border-radius: 10px;
 
-border-radius:20px;
+    background: #E8F5EE;
 
-font-size:12px;
+    color: #0B6B3A;
 
-}
+    display: flex;
 
+    align-items: center;
 
+    justify-content: center;
 
-.pending{
-
-background:#fef3c7;
-
-color:#92400e;
-
-}
-
-
-.info{
-
-background:#dbeafe;
-
-color:#1e40af;
+    font-size: 17px;
 
 }
 
 
-.warning{
+.section-heading h4 {
 
-background:#fef3c7;
+    margin: 0;
 
-color:#92400e;
+    color: #064E2A;
 
-}
+    font-size: 18px;
 
-
-.danger{
-
-background:#fee2e2;
-
-color:#991b1b;
+    font-weight: 800;
 
 }
 
 
+.section-heading p {
 
+    margin: 2px 0 0;
 
+    color: #6B7280;
 
-.process-card{
-
-background:white;
-
-border-radius:25px;
-
-padding:35px;
-
-box-shadow:
-
-0 10px 30px rgba(0,0,0,.08);
+    font-size: 12px;
 
 }
 
 
+/* =========================================================
+   DASHBOARD CARD
+========================================================= */
 
-.card-title{
+.dashboard-card {
 
-font-size:22px;
+    background: white;
 
-font-weight:700;
+    border: 1px solid #E5E7EB;
 
-margin-bottom:25px;
+    border-radius: 16px;
 
-}
+    padding: 20px;
 
+    min-height: 125px;
 
+    display: flex;
 
+    align-items: center;
 
-.progress{
+    gap: 14px;
 
-height:18px;
+    box-shadow:
+        0 6px 20px rgba(0,0,0,.05);
 
-border-radius:20px;
-
-background:#e5e7eb;
-
-}
-
-
-
-.progress-bar{
-
-background:
-
-linear-gradient(
-
-90deg,
-
-#0B6B3A,
-
-#34d399
-
-);
-
-border-radius:20px;
+    transition: .25s;
 
 }
 
 
+.dashboard-card:hover {
 
+    transform: translateY(-3px);
 
-
-.steps{
-
-display:flex;
-
-justify-content:space-between;
-
-margin-top:35px;
+    box-shadow:
+        0 10px 25px rgba(0,0,0,.08);
 
 }
 
 
+.card-content {
 
-.step{
-
-text-align:center;
-
-color:#9ca3af;
-
-font-size:14px;
+    min-width: 0;
 
 }
 
 
+.dashboard-card h6 {
 
-.step div{
+    color: #6B7280;
 
-height:45px;
+    font-size: 12px;
 
-width:45px;
+    font-weight: 600;
 
-border-radius:50%;
-
-background:#e5e7eb;
-
-display:flex;
-
-align-items:center;
-
-justify-content:center;
-
-margin:auto;
-
-font-weight:bold;
-
-margin-bottom:10px;
+    margin: 0 0 3px;
 
 }
 
 
+.dashboard-card h4 {
 
+    color: #1F2937;
 
-.step.active div{
+    font-size: 19px;
 
-background:#0B6B3A;
+    font-weight: 800;
 
-color:white;
+    margin: 0 0 7px;
 
-}
-
-
-
-.step.active{
-
-color:#0B6B3A;
-
-font-weight:600;
+    word-break: break-word;
 
 }
 
 
+/* =========================================================
+   ICONS
+========================================================= */
 
+.icon {
 
+    width: 52px;
 
-@media(max-width:768px){
+    height: 52px;
 
+    min-width: 52px;
 
-.steps{
+    border-radius: 13px;
 
-flex-direction:column;
+    display: flex;
 
-gap:25px;
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 24px;
 
 }
 
 
-.welcome-card{
+.icon.green {
 
-flex-direction:column;
+    background: #DCFCE7;
 
-gap:20px;
-
-align-items:flex-start;
+    color: #0B6B3A;
 
 }
 
+
+.icon.gold {
+
+    background: #FEF3C7;
+
+    color: #D97706;
+
+}
+
+
+.icon.success {
+
+    background: #D1FAE5;
+
+    color: #059669;
+
+}
+
+
+/* =========================================================
+   STATUS BADGES
+========================================================= */
+
+.status-badge {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    width: fit-content;
+
+    padding: 5px 10px;
+
+    border-radius: 999px;
+
+    font-size: 10px;
+
+    font-weight: 700;
+
+    line-height: 1.2;
+
+}
+
+
+.status-badge.pending {
+
+    background: #FEF3C7;
+
+    color: #92400E;
+
+}
+
+
+.status-badge.paid {
+
+    background: #D1FAE5;
+
+    color: #065F46;
+
+}
+
+
+.status-badge.success {
+
+    background: #D1FAE5;
+
+    color: #065F46;
+
+}
+
+
+.status-badge.processing {
+
+    background: #CFF4FC;
+
+    color: #055160;
+
+}
+
+
+.status-badge.completed {
+
+    background: #D1E7DD;
+
+    color: #0F5132;
+
+}
+
+
+.status-badge.rejected,
+
+.status-badge.danger {
+
+    background: #FEE2E2;
+
+    color: #991B1B;
+
+}
+
+
+.status-badge.warning {
+
+    background: #FEF3C7;
+
+    color: #92400E;
+
+}
+
+
+.status-badge.neutral {
+
+    background: #E5E7EB;
+
+    color: #4B5563;
+
+}
+
+
+/* =========================================================
+   PROCESS CARD
+========================================================= */
+
+.process-card {
+
+    background: white;
+
+    border: 1px solid #E5E7EB;
+
+    border-radius: 22px;
+
+    padding: 28px;
+
+    margin-top: 25px;
+
+    box-shadow:
+        0 8px 25px rgba(0,0,0,.06);
+
+}
+
+
+/* =========================================================
+   PROCESS HEADER
+========================================================= */
+
+.process-header {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 11px;
+
+    margin-bottom: 24px;
+
+}
+
+
+.process-icon {
+
+    width: 40px;
+
+    height: 40px;
+
+    min-width: 40px;
+
+    border-radius: 10px;
+
+    background: #E8F5EE;
+
+    color: #0B6B3A;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 18px;
+
+}
+
+
+.process-header h4 {
+
+    margin: 0;
+
+    color: #064E2A;
+
+    font-size: 18px;
+
+    font-weight: 800;
+
+}
+
+
+.process-header p {
+
+    margin: 2px 0 0;
+
+    color: #6B7280;
+
+    font-size: 12px;
+
+}
+
+
+/* =========================================================
+   PROGRESS
+========================================================= */
+
+.progress-section {
+
+    margin-bottom: 30px;
+
+}
+
+
+.progress-label {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 7px;
+
+    color: #6B7280;
+
+    font-size: 12px;
+
+}
+
+
+.progress-label strong {
+
+    color: #0B6B3A;
+
+    font-size: 13px;
+
+}
+
+
+.progress {
+
+    height: 13px;
+
+    border-radius: 999px;
+
+    background: #E5E7EB;
+
+    overflow: hidden;
+
+}
+
+
+.progress-bar {
+
+    height: 100%;
+
+    background: linear-gradient(
+        90deg,
+        #0B6B3A,
+        #34D399
+    );
+
+    border-radius: 999px;
+
+    transition: width .4s ease;
+
+}
+
+
+/* =========================================================
+   STEPS
+========================================================= */
+
+.steps {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    gap: 12px;
+
+}
+
+
+.step {
+
+    position: relative;
+
+    flex: 1;
+
+    text-align: center;
+
+    color: #9CA3AF;
+
+}
+
+
+.step-number {
+
+    width: 44px;
+
+    height: 44px;
+
+    margin: 0 auto 9px;
+
+    border-radius: 50%;
+
+    background: #E5E7EB;
+
+    color: #6B7280;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-weight: 800;
+
+    font-size: 14px;
+
+    transition: .25s;
+
+}
+
+
+.step.active {
+
+    color: #0B6B3A;
+
+}
+
+
+.step.active .step-number {
+
+    background: #0B6B3A;
+
+    color: white;
+
+    box-shadow:
+        0 4px 12px rgba(11,107,58,.20);
+
+}
+
+
+.step-content {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 2px;
+
+}
+
+
+.step-content strong {
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+}
+
+
+.step-content small {
+
+    color: #9CA3AF;
+
+    font-size: 10px;
+
+    line-height: 1.35;
+
+}
+
+
+.step.active .step-content small {
+
+    color: #6B7280;
+
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media(max-width:768px) {
+
+    .dashboard-page {
+
+        padding: 6px;
+
+    }
+
+
+    .welcome-card {
+
+        padding: 22px;
+
+        border-radius: 18px;
+
+        margin-bottom: 20px;
+
+    }
+
+
+    .welcome-card h2 {
+
+        font-size: 23px;
+
+    }
+
+
+    .school-badge {
+
+        width: 68px;
+
+        height: 68px;
+
+        min-width: 68px;
+
+        font-size: 23px;
+
+    }
+
+
+    .dashboard-card {
+
+        padding: 17px;
+
+        min-height: 110px;
+
+    }
+
+
+    .process-card {
+
+        padding: 22px;
+
+        border-radius: 18px;
+
+        margin-top: 20px;
+
+    }
+
+
+    .steps {
+
+        gap: 8px;
+
+    }
+
+
+    .step-content strong {
+
+        font-size: 11px;
+
+    }
+
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media(max-width:576px) {
+
+    .dashboard-page {
+
+        padding: 2px;
+
+    }
+
+
+    /* WELCOME */
+
+    .welcome-card {
+
+        padding: 17px;
+
+        border-radius: 16px;
+
+        margin-bottom: 17px;
+
+        gap: 14px;
+
+    }
+
+
+    .welcome-badge {
+
+        font-size: 9px;
+
+        padding: 5px 9px;
+
+        margin-bottom: 8px;
+
+    }
+
+
+    .welcome-card h2 {
+
+        font-size: 19px;
+
+        line-height: 1.25;
+
+        margin-bottom: 5px;
+
+    }
+
+
+    .welcome-card p {
+
+        font-size: 12px;
+
+        line-height: 1.45;
+
+    }
+
+
+    .school-badge {
+
+        width: 55px;
+
+        height: 55px;
+
+        min-width: 55px;
+
+        border-width: 3px;
+
+        font-size: 18px;
+
+    }
+
+
+    /* SECTION */
+
+    .section-heading {
+
+        gap: 8px;
+
+        margin-bottom: 11px;
+
+    }
+
+
+    .section-heading-icon {
+
+        width: 32px;
+
+        height: 32px;
+
+        min-width: 32px;
+
+        border-radius: 8px;
+
+        font-size: 14px;
+
+    }
+
+
+    .section-heading h4 {
+
+        font-size: 15px;
+
+    }
+
+
+    .section-heading p {
+
+        font-size: 10px;
+
+    }
+
+
+    /* DASHBOARD CARDS */
+
+    .dashboard-card {
+
+        min-height: 100px;
+
+        padding: 13px;
+
+        border-radius: 13px;
+
+        gap: 11px;
+
+    }
+
+
+    .icon {
+
+        width: 43px;
+
+        height: 43px;
+
+        min-width: 43px;
+
+        border-radius: 11px;
+
+        font-size: 20px;
+
+    }
+
+
+    .dashboard-card h6 {
+
+        font-size: 10px;
+
+        margin-bottom: 2px;
+
+    }
+
+
+    .dashboard-card h4 {
+
+        font-size: 16px;
+
+        margin-bottom: 5px;
+
+    }
+
+
+    .status-badge {
+
+        padding: 4px 8px;
+
+        font-size: 9px;
+
+    }
+
+
+    /* PROCESS */
+
+    .process-card {
+
+        padding: 15px;
+
+        border-radius: 16px;
+
+        margin-top: 16px;
+
+    }
+
+
+    .process-header {
+
+        gap: 8px;
+
+        margin-bottom: 17px;
+
+    }
+
+
+    .process-icon {
+
+        width: 34px;
+
+        height: 34px;
+
+        min-width: 34px;
+
+        border-radius: 8px;
+
+        font-size: 15px;
+
+    }
+
+
+    .process-header h4 {
+
+        font-size: 15px;
+
+    }
+
+
+    .process-header p {
+
+        font-size: 10px;
+
+    }
+
+
+    .progress-section {
+
+        margin-bottom: 22px;
+
+    }
+
+
+    .progress-label {
+
+        font-size: 10px;
+
+        margin-bottom: 5px;
+
+    }
+
+
+    .progress-label strong {
+
+        font-size: 11px;
+
+    }
+
+
+    .progress {
+
+        height: 9px;
+
+    }
+
+
+    /* STEPS */
+
+    .steps {
+
+        flex-direction: column;
+
+        gap: 0;
+
+    }
+
+
+    .step {
+
+        display: flex;
+
+        align-items: center;
+
+        text-align: left;
+
+        gap: 11px;
+
+        min-height: 54px;
+
+    }
+
+
+    .step-number {
+
+        width: 35px;
+
+        height: 35px;
+
+        min-width: 35px;
+
+        margin: 0;
+
+        font-size: 12px;
+
+    }
+
+
+    .step-content {
+
+        gap: 1px;
+
+    }
+
+
+    .step-content strong {
+
+        font-size: 11px;
+
+    }
+
+
+    .step-content small {
+
+        font-size: 9px;
+
+    }
+
+}
+
+
+/* =========================================================
+   VERY SMALL PHONES
+========================================================= */
+
+@media(max-width:380px) {
+
+    .welcome-card {
+
+        padding: 14px;
+
+    }
+
+
+    .welcome-card h2 {
+
+        font-size: 18px;
+
+    }
+
+
+    .welcome-card p {
+
+        font-size: 11px;
+
+    }
+
+
+    .school-badge {
+
+        width: 48px;
+
+        height: 48px;
+
+        min-width: 48px;
+
+        font-size: 16px;
+
+    }
+
+
+    .dashboard-card {
+
+        padding: 11px;
+
+        min-height: 92px;
+
+    }
+
+
+    .icon {
+
+        width: 39px;
+
+        height: 39px;
+
+        min-width: 39px;
+
+        font-size: 18px;
+
+    }
+
+
+    .dashboard-card h4 {
+
+        font-size: 15px;
+
+    }
+
+
+    .process-card {
+
+        padding: 12px;
+
+    }
+
+
+    .step {
+
+        min-height: 50px;
+
+    }
+
+
+    .step-number {
+
+        width: 32px;
+
+        height: 32px;
+
+        min-width: 32px;
+
+    }
 
 }
 

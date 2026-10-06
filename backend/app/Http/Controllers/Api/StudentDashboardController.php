@@ -4,292 +4,411 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-
 use App\Models\Enrollment;
 use App\Models\Payment;
 
-
 class StudentDashboardController extends Controller
 {
-
     public function index(Request $request)
     {
-
-        $user = $request->user();
-
-
         /*
         |--------------------------------------------------------------------------
-        | Student
+        | Get authenticated user
         |--------------------------------------------------------------------------
         */
 
-        $student = $user->student;
-
-
-
-        $enrollment = null;
-
-        $payment = null;
-
-
+        $user = $request->user();
 
         /*
         |--------------------------------------------------------------------------
-        | Default Dashboard Data
+        | Default dashboard values
+        |--------------------------------------------------------------------------
+        */
+
+        $enrollmentFee = 1500.00;
+
+        $steps = [
+            'profile' => false,
+            'enrollment' => false,
+            'payment' => false,
+            'processing' => false,
+            'completed' => false,
+        ];
+
+        /*
+        |--------------------------------------------------------------------------
+        | Check student profile
+        |--------------------------------------------------------------------------
+        */
+
+        $student = $user?->student;
+
+        if (!$student) {
+            return response()->json([
+                'enrollment_status' => 'No Enrollment',
+                'enrollment_fee' => $enrollmentFee,
+                'payment_status' => 'Not Available',
+                'progress' => 0,
+                'steps' => $steps,
+            ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Determine whether profile is complete
+        |--------------------------------------------------------------------------
+        */
+
+        $profileFields = [
+            'first_name',
+            'last_name',
+            'birth_date',
+            'gender',
+            'civil_status',
+            'nationality',
+            'contact_number',
+            'email',
+            'address',
+        ];
+
+        $profileComplete = true;
+
+        foreach ($profileFields as $field) {
+            if (empty($student->{$field})) {
+                $profileComplete = false;
+                break;
+            }
+        }
+
+        $steps['profile'] = $profileComplete;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Initial progress
         |--------------------------------------------------------------------------
         */
 
         $progress = 0;
 
-        $subjects = 0;
-
-        $enrollmentFee = 1500.00;
-
-
-        $steps = [
-
-            "profile" => false,
-
-            "enrollment" => false,
-
-            "approval" => false,
-
-            "payment" => false,
-
-            "completed" => false
-
-        ];
-
-
+        if ($profileComplete) {
+            $progress = 20;
+        }
 
         /*
         |--------------------------------------------------------------------------
-        | Check Student Profile
+        | Get latest enrollment
         |--------------------------------------------------------------------------
         */
 
+        $enrollment = Enrollment::where(
+            'student_id',
+            $student->id
+        )
+            ->latest('id')
+            ->first();
 
-        if($student){
+        /*
+        |--------------------------------------------------------------------------
+        | No enrollment
+        |--------------------------------------------------------------------------
+        */
 
+        if (!$enrollment) {
+            return response()->json([
+                'enrollment_status' => 'No Enrollment',
+                'enrollment_fee' => $enrollmentFee,
+                'payment_status' => 'Not Available',
+                'progress' => $progress,
+                'steps' => $steps,
+            ]);
+        }
 
-            // Step 1
-            $steps["profile"] = true;
+        /*
+        |--------------------------------------------------------------------------
+        | Enrollment has been submitted
+        |--------------------------------------------------------------------------
+        */
 
-            $progress = 20;
+        $steps['enrollment'] = true;
 
+        $progress = max($progress, 40);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Get payment
+        |--------------------------------------------------------------------------
+        |
+        | Prefer a Paid payment in case there are multiple payment attempts.
+        |
+        */
+
+        $payment = Payment::where(
+            'enrollment_id',
+            $enrollment->id
+        )
+            ->orderByRaw("
+                CASE
+                    WHEN status = 'Paid' THEN 0
+                    ELSE 1
+                END
+            ")
+            ->latest('id')
+            ->first();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Payment status
+        |--------------------------------------------------------------------------
+        */
+
+        $paymentStatus = 'Pending';
+
+        if ($payment) {
+            $paymentStatus = $payment->status;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Student-facing enrollment status
+        |--------------------------------------------------------------------------
+        |
+        | Database:
+        |
+        | Pending
+        | Paid
+        | Processing
+        | Completed
+        | Rejected
+        |
+        | Dashboard:
+        |
+        | Pending
+        | Enrolled
+        | Processing
+        | Completed
+        | Rejected
+        |
+        */
+
+        $displayStatus = $enrollment->status;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Enrollment workflow
+        |--------------------------------------------------------------------------
+        */
+
+        switch ($enrollment->status) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | PENDING
+            |--------------------------------------------------------------------------
+            |
+            | Enrollment submitted but payment has not been completed.
+            |
+            */
+
+            case 'Pending':
+
+                $displayStatus = 'Pending';
+
+                $steps['payment'] = false;
+                $steps['processing'] = false;
+                $steps['completed'] = false;
+
+                $progress = 40;
+
+                $enrollmentFee = 1500.00;
+
+                break;
 
 
             /*
             |--------------------------------------------------------------------------
-            | Get Latest Enrollment
+            | PAID
             |--------------------------------------------------------------------------
+            |
+            | Payment has been successfully completed.
+            |
+            | Student dashboard displays this as:
+            |
+            | ENROLLED
+            |
             */
 
+            case 'Paid':
 
-            $enrollment = Enrollment::where(
+                $displayStatus = 'Enrolled';
 
-                'student_id',
+                $steps['payment'] = true;
+                $steps['processing'] = false;
+                $steps['completed'] = false;
 
-                $student->id
+                $progress = 60;
 
-            )
-            ->latest()
-            ->first();
+                $enrollmentFee = 0;
 
-
-
-
-
-            if($enrollment){
+                break;
 
 
-                // Step 2
-                $steps["enrollment"] = true;
+            /*
+            |--------------------------------------------------------------------------
+            | PROCESSING
+            |--------------------------------------------------------------------------
+            |
+            | College/registrar is processing the enrollment.
+            |
+            */
 
-                $progress = 40;
+            case 'Processing':
+
+                $displayStatus = 'Processing';
+
+                $steps['payment'] = true;
+                $steps['processing'] = true;
+                $steps['completed'] = false;
+
+                $progress = 80;
+
+                $enrollmentFee = 0;
+
+                break;
 
 
+            /*
+            |--------------------------------------------------------------------------
+            | COMPLETED
+            |--------------------------------------------------------------------------
+            |
+            | Study load and payment receipt have been completed/sent.
+            |
+            */
 
-                /*
-                |--------------------------------------------------------------------------
-                | Registrar Approval
-                |--------------------------------------------------------------------------
-                */
+            case 'Completed':
+
+                $displayStatus = 'Completed';
+
+                $steps['profile'] = true;
+                $steps['enrollment'] = true;
+                $steps['payment'] = true;
+                $steps['processing'] = true;
+                $steps['completed'] = true;
+
+                $progress = 100;
+
+                $enrollmentFee = 0;
+
+                break;
 
 
-                if(
-                    $enrollment->status == "Approved"
-                    ||
-                    $enrollment->status == "Enrolled"
-                ){
+            /*
+            |--------------------------------------------------------------------------
+            | REJECTED
+            |--------------------------------------------------------------------------
+            |
+            | Keep payment state visible if payment was already completed.
+            |
+            */
 
-                    $steps["approval"] = true;
+            case 'Rejected':
+
+                $displayStatus = 'Rejected';
+
+                if ($paymentStatus === 'Paid') {
+
+                    $steps['payment'] = true;
 
                     $progress = 60;
 
+                    $enrollmentFee = 0;
+
+                } else {
+
+                    $steps['payment'] = false;
+
+                    $progress = 40;
+
+                    $enrollmentFee = 1500.00;
                 }
 
+                $steps['processing'] = false;
+                $steps['completed'] = false;
+
+                break;
 
 
+            /*
+            |--------------------------------------------------------------------------
+            | Unknown status
+            |--------------------------------------------------------------------------
+            */
 
+            default:
 
-                /*
-                |--------------------------------------------------------------------------
-                | Payment
-                |--------------------------------------------------------------------------
-                */
+                $displayStatus = $enrollment->status;
 
-                    $payment = Payment::where(
-                    'enrollment_id',
-                    $enrollment->id
-                )
-                ->latest()
-                ->first();
+                if ($paymentStatus === 'Paid') {
 
-                // Default balance
-                $enrollmentFee = 1500;
+                    $steps['payment'] = true;
 
-                // If already paid, balance becomes zero
-                if ($payment && $payment->status == "Paid") {
+                    $progress = 60;
 
                     $enrollmentFee = 0;
 
-                    $steps["payment"] = true;
+                } else {
 
-                    $progress = 80;
+                    $progress = 40;
 
-                }
-                /*
-                |--------------------------------------------------------------------------
-                | Assigned Subjects
-                |--------------------------------------------------------------------------
-                |
-                | Do NOT count curriculum subjects.
-                |
-                | Only count subjects assigned
-                | to this student.
-                |
-                */
-
-
-                if(
-                    method_exists(
-                        $enrollment,
-                        'subjects'
-                    )
-                ){
-
-
-                    $subjects = $enrollment
-                                ->subjects()
-                                ->count();
-
-
+                    $enrollmentFee = 1500.00;
                 }
 
-
-
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Completed Enrollment
-                |--------------------------------------------------------------------------
-                */
-
-
-                if(
-
-                    $payment
-
-                    &&
-
-                    $payment->status == "Paid"
-
-                    &&
-
-                    $subjects > 0
-
-                ){
-
-
-                    $steps["completed"] = true;
-
-
-                    $progress = 100;
-
-
-                }
-
-
-
-            }
-
-
+                break;
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Always synchronize payment state
+        |--------------------------------------------------------------------------
+        |
+        | If PayMongo says the payment is Paid, make sure the payment
+        | step is completed regardless of other enrollment information.
+        |
+        */
 
+        if ($paymentStatus === 'Paid') {
 
+            $steps['payment'] = true;
 
+            $enrollmentFee = 0;
+
+            /*
+            | If enrollment is still Paid in the database,
+            | the student-facing status remains Enrolled.
+            */
+
+            if ($enrollment->status === 'Paid') {
+
+                $displayStatus = 'Enrolled';
+
+                if ($progress < 60) {
+                    $progress = 60;
+                }
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Return dashboard data
+        |--------------------------------------------------------------------------
+        */
 
         return response()->json([
-
-
-
-            "enrollment_status" =>
-
-                $enrollment
-
-                ?
-
-                $enrollment->status
-
-                :
-
-                "No Enrollment",
-
-
-
-
-            "subjects" => $subjects,
-
-
-
-
-            "enrollment_fee" => $enrollmentFee,
-
-
-
-
-            "payment_status" =>
-
-                $payment
-
-                ?
-
-                $payment->status
-
-                :
-
-                "Unpaid",
-
-
-
-
-            "progress" => $progress,
-
-
-
-
-            "steps" => $steps
-
-
-
+            'enrollment_status' => $displayStatus,
+            'enrollment_fee' => $enrollmentFee,
+            'payment_status' => $paymentStatus,
+            'progress' => $progress,
+            'steps' => $steps,
         ]);
-
-
-
     }
-
 }

@@ -34,12 +34,10 @@ const backgroundImages = [
 
 ]
 
-
 const currentImageIndex = ref(0)
 
 let slideshowInterval = null
 let alertTimer = null
-
 
 
 /*
@@ -62,7 +60,6 @@ onMounted(() => {
 })
 
 
-
 onUnmounted(() => {
 
     if (slideshowInterval) {
@@ -76,7 +73,6 @@ onUnmounted(() => {
 })
 
 
-
 /*
 |--------------------------------------------------------------------------
 | Router
@@ -84,7 +80,6 @@ onUnmounted(() => {
 */
 
 const router = useRouter()
-
 
 
 /*
@@ -99,7 +94,6 @@ const password = ref("")
 const showPassword = ref(false)
 
 const isLoading = ref(false)
-
 
 
 /*
@@ -119,7 +113,6 @@ const alert = ref({
 })
 
 
-
 function showAlert(type, message) {
 
     alert.value = {
@@ -132,20 +125,17 @@ function showAlert(type, message) {
 
     }
 
-
     if (alertTimer) {
         clearTimeout(alertTimer)
     }
-
 
     alertTimer = setTimeout(() => {
 
         alert.value.show = false
 
-    }, 4000)
+    }, 5000)
 
 }
-
 
 
 /*
@@ -160,6 +150,16 @@ async function handleLogin() {
         return
     }
 
+    if (!email.value || !password.value) {
+
+        showAlert(
+            "error",
+            "Please enter your email and password."
+        )
+
+        return
+    }
+
 
     isLoading.value = true
 
@@ -168,6 +168,10 @@ async function handleLogin() {
 
     try {
 
+        console.log("Attempting login...")
+        console.log("Email:", email.value)
+
+
         const response = await auth.login({
 
             email: email.value,
@@ -175,6 +179,24 @@ async function handleLogin() {
             password: password.value
 
         })
+
+
+        console.log("Login response:", response.data)
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Check Backend Response
+        |--------------------------------------------------------------------------
+        */
+
+        if (!response.data?.token) {
+
+            throw new Error(
+                "Login succeeded but no authentication token was returned."
+            )
+
+        }
 
 
         /*
@@ -188,10 +210,15 @@ async function handleLogin() {
             response.data.token
         )
 
-
         localStorage.setItem(
             "user",
             JSON.stringify(response.data.user)
+        )
+
+
+        console.log(
+            "Token saved:",
+            localStorage.getItem("token")
         )
 
 
@@ -202,11 +229,8 @@ async function handleLogin() {
         */
 
         showAlert(
-
             "success",
-
             "Login successful! Redirecting..."
-
         )
 
 
@@ -220,17 +244,15 @@ async function handleLogin() {
 
             const user = response.data.user
 
-
             if (user.role === "registrar") {
 
                 router.push("/registrar/applications")
 
             }
 
-        else if (user.role === "cashier") {
-        router.push(
-            "/cashier/dashboard"
-        )
+            else if (user.role === "cashier") {
+
+                router.push("/cashier/dashboard")
 
             }
 
@@ -252,25 +274,95 @@ async function handleLogin() {
 
             }
 
-        }, 1200)
+        }, 1000)
 
 
     }
 
     catch (error) {
 
-        console.error("Login error:", error)
+        console.error("================================")
+        console.error("LOGIN ERROR")
+        console.error("================================")
+        console.error(error)
 
 
-        showAlert(
+        /*
+        |--------------------------------------------------------------------------
+        | Backend responded
+        |--------------------------------------------------------------------------
+        */
 
-            "error",
+        if (error.response) {
 
-            error.response?.data?.message
-            ||
-            "Invalid email or password."
+            console.error(
+                "Backend status:",
+                error.response.status
+            )
 
-        )
+            console.error(
+                "Backend response:",
+                error.response.data
+            )
+
+
+            if (error.response.status === 401) {
+
+                showAlert(
+                    "error",
+                    "Invalid email or password."
+                )
+
+            }
+
+            else {
+
+                showAlert(
+                    "error",
+                    error.response.data?.message ||
+                    "The server returned an error. Please try again."
+                )
+
+            }
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Request was sent but no response
+        |--------------------------------------------------------------------------
+        */
+
+        else if (error.request) {
+
+            console.error(
+                "No response received from Laravel."
+            )
+
+            showAlert(
+                "error",
+                "Cannot connect to the server. Please make sure your phone and computer are connected to the same Wi-Fi."
+            )
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Axios / JavaScript Error
+        |--------------------------------------------------------------------------
+        */
+
+        else {
+
+            showAlert(
+                "error",
+                error.message ||
+                "Something went wrong while logging in."
+            )
+
+        }
 
     }
 
@@ -289,7 +381,6 @@ async function handleLogin() {
 
 <div class="login-page">
 
-
     <div class="login-wrapper">
 
 
@@ -304,13 +395,11 @@ async function handleLogin() {
 
             <div class="logo-area">
 
-
                 <img
                     :src="SFXCLogoOnly"
                     class="school-logo"
                     alt="SFXC Logo"
                 >
-
 
                 <img
                     :src="SFXCTextOnly"
@@ -318,27 +407,19 @@ async function handleLogin() {
                     alt="St. Francis Xavier College"
                 >
 
-
             </div>
-
 
 
             <!-- TITLE -->
 
             <h2>
-
                 Welcome Back!
-
             </h2>
 
-
             <p class="subtitle">
-
                 Please enter your school credentials
                 to access your account.
-
             </p>
-
 
 
             <!-- ALERT -->
@@ -348,11 +429,8 @@ async function handleLogin() {
                 class="alert-box"
                 :class="alert.type"
             >
-
                 {{ alert.message }}
-
             </div>
-
 
 
             <!-- LOGIN FORM -->
@@ -367,13 +445,9 @@ async function handleLogin() {
 
                 <div class="form-group">
 
-
                     <label>
-
                         Email Address
-
                     </label>
-
 
                     <input
                         type="email"
@@ -382,27 +456,21 @@ async function handleLogin() {
                         v-model="email"
                         autocomplete="email"
                         required
+                        :disabled="isLoading"
                     >
 
-
                 </div>
-
 
 
                 <!-- PASSWORD -->
 
                 <div class="form-group password-group">
 
-
                     <label>
-
                         Password
-
                     </label>
 
-
                     <div class="password-wrapper">
-
 
                         <input
                             :type="
@@ -415,8 +483,8 @@ async function handleLogin() {
                             v-model="password"
                             autocomplete="current-password"
                             required
+                            :disabled="isLoading"
                         >
-
 
                         <button
                             type="button"
@@ -424,18 +492,14 @@ async function handleLogin() {
                             @click="
                                 showPassword = !showPassword
                             "
+                            :disabled="isLoading"
                         >
-
                             {{ showPassword ? 'Hide' : 'Show' }}
-
                         </button>
-
 
                     </div>
 
-
                 </div>
-
 
 
                 <!-- LOGIN BUTTON -->
@@ -446,7 +510,6 @@ async function handleLogin() {
                     :disabled="isLoading"
                 >
 
-
                     <span v-if="isLoading">
 
                         <span class="spinner"></span>
@@ -455,41 +518,30 @@ async function handleLogin() {
 
                     </span>
 
-
                     <span v-else>
 
                         Sign In
 
                     </span>
 
-
                 </button>
 
-
             </form>
-
 
 
             <!-- REGISTER -->
 
             <div class="register-link">
 
-
                 Don't have an account?
 
-
                 <router-link to="/register">
-
                     Create Account
-
                 </router-link>
-
 
             </div>
 
-
         </div>
-
 
 
         <!-- =========================================================
@@ -497,9 +549,6 @@ async function handleLogin() {
         ========================================================== -->
 
         <div class="image-box">
-
-
-            <!-- BACKGROUND SLIDES -->
 
             <div
                 v-for="(img, index) in backgroundImages"
@@ -513,32 +562,18 @@ async function handleLogin() {
                 }"
             ></div>
 
-
-
-            <!-- OVERLAY -->
-
             <div class="overlay"></div>
-
-
-
-            <!-- CONTENT -->
 
             <div class="content">
 
-
                 <h5>
-
                     SFXC • Since 1991
-
                 </h5>
-
 
                 <h1>
 
                     <span>
-
                         EXCELLENCE
-
                     </span>
 
                     <br>
@@ -547,28 +582,19 @@ async function handleLogin() {
 
                 </h1>
 
-
                 <p>
-
                     Nurturing minds, building futures,
                     and shaping leaders of tomorrow.
-
                 </p>
 
-
                 <blockquote>
-
                     "The beautiful thing about learning
                     is that no one can take it away from you."
-
                 </blockquote>
-
 
             </div>
 
-
         </div>
-
 
     </div>
 
@@ -579,25 +605,15 @@ async function handleLogin() {
 
 <style scoped>
 
-
-/*
-|--------------------------------------------------------------------------
-| PAGE
-|--------------------------------------------------------------------------
-*/
-
 .login-page {
 
     min-height: 100vh;
-
     min-height: 100dvh;
 
     background: #f3f8f5;
 
     display: flex;
-
     justify-content: center;
-
     align-items: center;
 
     padding: 30px;
@@ -607,16 +623,9 @@ async function handleLogin() {
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| LOGIN WRAPPER
-|--------------------------------------------------------------------------
-*/
-
 .login-wrapper {
 
     width: 1100px;
-
     max-width: 100%;
 
     display: flex;
@@ -633,12 +642,6 @@ async function handleLogin() {
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| LOGIN BOX
-|--------------------------------------------------------------------------
-*/
-
 .login-box {
 
     width: 50%;
@@ -650,16 +653,9 @@ async function handleLogin() {
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| LOGO
-|--------------------------------------------------------------------------
-*/
-
 .logo-area {
 
     display: flex;
-
     align-items: center;
 
     gap: 15px;
@@ -672,7 +668,6 @@ async function handleLogin() {
 .school-logo {
 
     width: 75px;
-
     height: auto;
 
     object-fit: contain;
@@ -683,7 +678,6 @@ async function handleLogin() {
 .school-text {
 
     width: 190px;
-
     max-width: 70%;
 
     height: auto;
@@ -693,16 +687,9 @@ async function handleLogin() {
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| TITLE
-|--------------------------------------------------------------------------
-*/
-
 h2 {
 
     font-size: 32px;
-
     font-weight: 800;
 
     margin-bottom: 10px;
@@ -720,12 +707,6 @@ h2 {
 
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| FORM
-|--------------------------------------------------------------------------
-*/
 
 .form-group {
 
@@ -750,7 +731,6 @@ h2 {
 .form-control {
 
     width: 100%;
-
     height: 52px;
 
     border-radius: 12px;
@@ -779,12 +759,6 @@ h2 {
 
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| PASSWORD
-|--------------------------------------------------------------------------
-*/
 
 .password-wrapper {
 
@@ -827,16 +801,9 @@ h2 {
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| LOGIN BUTTON
-|--------------------------------------------------------------------------
-*/
-
 .btn-login {
 
     height: 52px;
-
     width: 100%;
 
     border: none;
@@ -874,18 +841,11 @@ h2 {
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| SPINNER
-|--------------------------------------------------------------------------
-*/
-
 .spinner {
 
     display: inline-block;
 
     width: 15px;
-
     height: 15px;
 
     border: 2px solid white;
@@ -904,19 +864,11 @@ h2 {
 @keyframes spin {
 
     to {
-
         transform: rotate(360deg);
-
     }
 
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| REGISTER
-|--------------------------------------------------------------------------
-*/
 
 .register-link {
 
@@ -948,12 +900,6 @@ h2 {
 
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| IMAGE SIDE
-|--------------------------------------------------------------------------
-*/
 
 .image-box {
 
@@ -1084,12 +1030,6 @@ blockquote {
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| ALERT
-|--------------------------------------------------------------------------
-*/
-
 .alert-box {
 
     padding: 15px;
@@ -1132,7 +1072,6 @@ blockquote {
     from {
 
         opacity: 0;
-
         transform: translateY(-10px);
 
     }
@@ -1140,19 +1079,12 @@ blockquote {
     to {
 
         opacity: 1;
-
         transform: translateY(0);
 
     }
 
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| TABLET
-|--------------------------------------------------------------------------
-*/
 
 @media (max-width: 900px) {
 
@@ -1201,12 +1133,6 @@ blockquote {
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| MOBILE
-|--------------------------------------------------------------------------
-*/
-
 @media (max-width: 576px) {
 
     .login-page {
@@ -1223,7 +1149,6 @@ blockquote {
     .login-wrapper {
 
         min-height: 100vh;
-
         min-height: 100dvh;
 
         border-radius: 0;
@@ -1236,7 +1161,6 @@ blockquote {
     .login-box {
 
         min-height: 100vh;
-
         min-height: 100dvh;
 
         padding: 35px 22px;
@@ -1271,7 +1195,6 @@ blockquote {
     .school-text {
 
         width: 170px;
-
         max-width: 65%;
 
     }
@@ -1280,7 +1203,6 @@ blockquote {
     h2 {
 
         font-size: 28px;
-
         text-align: center;
 
     }
@@ -1307,7 +1229,6 @@ blockquote {
     .form-control {
 
         height: 54px;
-
         font-size: 16px;
 
     }
@@ -1316,7 +1237,6 @@ blockquote {
     .btn-login {
 
         height: 54px;
-
         font-size: 16px;
 
     }
@@ -1341,12 +1261,6 @@ blockquote {
 
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| VERY SMALL PHONES
-|--------------------------------------------------------------------------
-*/
 
 @media (max-width: 360px) {
 

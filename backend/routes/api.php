@@ -6,13 +6,11 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\StudentProfileController;
 use App\Http\Controllers\Api\EnrollmentController;
 use App\Http\Controllers\Api\RegistrarController;
-use App\Http\Controllers\Api\AssessmentController;
 use App\Http\Controllers\Api\CourseController;
-use App\Http\Controllers\Api\CurriculumController;
 use App\Http\Controllers\Api\SemesterController;
 use App\Http\Controllers\Api\SchoolYearController;
 use App\Http\Controllers\Api\PaymentController;
-use App\Http\Controllers\PayMongoWebhookController;
+use App\Http\Controllers\Api\SchoolController;
 use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\EnrollmentOptionController;
 use App\Http\Controllers\Api\StudentDashboardController;
@@ -20,6 +18,9 @@ use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\RegistrarReportController;
 use App\Http\Controllers\Api\CashierController;
 use App\Http\Controllers\Api\AcademicPeriodController;
+use App\Http\Controllers\Api\EnrollmentDocumentRequirementController;
+use App\Http\Controllers\SecurityBankWebhookController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -27,25 +28,25 @@ use App\Http\Controllers\Api\AcademicPeriodController;
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('auth:sanctum')->group(function(){
-
+Route::middleware('auth:sanctum')->group(function () {
     Route::get(
         '/student/dashboard',
-        [StudentDashboardController::class,'index']
+        [StudentDashboardController::class, 'index']
     );
-
 });
+
 
 /*
 |--------------------------------------------------------------------------
-| Academic Routes
+| Enrollment Options
 |--------------------------------------------------------------------------
 */
 
 Route::get(
     '/enrollment/options',
-    [EnrollmentOptionController::class,'index']
+    [EnrollmentOptionController::class, 'index']
 );
+
 
 /*
 |--------------------------------------------------------------------------
@@ -55,24 +56,71 @@ Route::get(
 
 Route::post(
     '/register',
-    [AuthController::class,'register']
+    [AuthController::class, 'register']
 );
 
 Route::post(
     '/login',
-    [AuthController::class,'login']
+    [AuthController::class, 'login']
 );
+
+
+/*
+|--------------------------------------------------------------------------
+| School Directory
+|--------------------------------------------------------------------------
+|
+| Used by the student enrollment form to search and select
+| schools from the DepEd school directory.
+|
+| IMPORTANT:
+| /schools/search must come BEFORE /schools/{id}
+| so Laravel does not treat "search" as an ID.
+|
+*/
+
+Route::get(
+    '/schools/search',
+    [SchoolController::class, 'search']
+);
+
+Route::get(
+    '/schools/{id}',
+    [SchoolController::class, 'show']
+);
+
 
 /*
 |--------------------------------------------------------------------------
 | PayMongo Webhook
 |--------------------------------------------------------------------------
+|
+| PayMongo calls this endpoint directly.
+| Do NOT protect this route with auth:sanctum.
+|
 */
 
 Route::post(
     '/paymongo/webhook',
-    [PayMongoWebhookController::class,'handle']
+    [PaymentController::class, 'webhook']
 );
+
+
+/*
+|--------------------------------------------------------------------------
+| Security Bank Webhook
+|--------------------------------------------------------------------------
+|
+| Security Bank calls this endpoint directly.
+| Do NOT protect this route with auth:sanctum.
+|
+*/
+
+Route::post(
+    '/security-bank/webhook',
+    [SecurityBankWebhookController::class, 'handle']
+);
+
 
 /*
 |--------------------------------------------------------------------------
@@ -80,7 +128,7 @@ Route::post(
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('auth:sanctum')->group(function(){
+Route::middleware('auth:sanctum')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
@@ -90,13 +138,14 @@ Route::middleware('auth:sanctum')->group(function(){
 
     Route::get(
         '/me',
-        [AuthController::class,'me']
+        [AuthController::class, 'me']
     );
 
     Route::post(
         '/logout',
-        [AuthController::class,'logout']
+        [AuthController::class, 'logout']
     );
+
 
     /*
     |--------------------------------------------------------------------------
@@ -104,7 +153,7 @@ Route::middleware('auth:sanctum')->group(function(){
     |--------------------------------------------------------------------------
     */
 
-    Route::prefix('student')->group(function(){
+    Route::prefix('student')->group(function () {
 
         /*
         |--------------------------------------------------------------------------
@@ -114,23 +163,24 @@ Route::middleware('auth:sanctum')->group(function(){
 
         Route::get(
             '/profile',
-            [StudentProfileController::class,'show']
+            [StudentProfileController::class, 'show']
         );
 
         Route::get(
             '/profile/completion',
-            [StudentProfileController::class,'completion']
+            [StudentProfileController::class, 'completion']
         );
 
         Route::post(
             '/profile',
-            [StudentProfileController::class,'store']
+            [StudentProfileController::class, 'store']
         );
 
         Route::put(
             '/profile',
-            [StudentProfileController::class,'update']
+            [StudentProfileController::class, 'update']
         );
+
 
         /*
         |--------------------------------------------------------------------------
@@ -140,13 +190,14 @@ Route::middleware('auth:sanctum')->group(function(){
 
         Route::post(
             '/enrollment',
-            [EnrollmentController::class,'store']
+            [EnrollmentController::class, 'store']
         );
 
         Route::get(
             '/enrollment/check-current',
-            [EnrollmentController::class,'checkCurrentEnrollment']
+            [EnrollmentController::class, 'checkCurrentEnrollment']
         );
+
 
         /*
         |--------------------------------------------------------------------------
@@ -154,20 +205,41 @@ Route::middleware('auth:sanctum')->group(function(){
         |--------------------------------------------------------------------------
         */
 
-        Route::post(
-            '/payment/confirm',
-            [PaymentController::class,'confirmPayment']
-        );
-
         Route::get(
             '/payment/info',
-            [PaymentController::class,'paymentInfo']
+            [PaymentController::class, 'paymentInfo']
         );
+
+
+        /*
+        | PayMongo / GCash
+        */
 
         Route::post(
             '/payment/create/{id}',
-            [PaymentController::class,'createCheckout']
+            [PaymentController::class, 'createCheckout']
         );
+
+
+        /*
+        | Security Bank QR
+        */
+
+        Route::post(
+            '/payment/security-bank/{id}',
+            [PaymentController::class, 'createSecurityBankQr']
+        );
+
+
+        /*
+        | Kept for compatibility with existing frontend.
+        */
+
+        Route::post(
+            '/payment/confirm',
+            [PaymentController::class, 'confirmPayment']
+        );
+
 
         /*
         |--------------------------------------------------------------------------
@@ -177,8 +249,9 @@ Route::middleware('auth:sanctum')->group(function(){
 
         Route::get(
             '/receipt',
-            [ReceiptController::class,'show']
+            [ReceiptController::class, 'show']
         );
+
 
         /*
         |--------------------------------------------------------------------------
@@ -188,21 +261,11 @@ Route::middleware('auth:sanctum')->group(function(){
 
         Route::get(
             '/documents/enrollment-form',
-            [DocumentController::class,'enrollmentForm']
+            [DocumentController::class, 'enrollmentForm']
         );
 
     });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Assessment
-    |--------------------------------------------------------------------------
-    */
-
-    Route::post(
-        '/assessment/create/{id}',
-        [AssessmentController::class,'create']
-    );
 
     /*
     |--------------------------------------------------------------------------
@@ -210,7 +273,7 @@ Route::middleware('auth:sanctum')->group(function(){
     |--------------------------------------------------------------------------
     */
 
-    Route::prefix('registrar')->group(function(){
+    Route::prefix('registrar')->group(function () {
 
         /*
         |--------------------------------------------------------------------------
@@ -220,8 +283,9 @@ Route::middleware('auth:sanctum')->group(function(){
 
         Route::get(
             '/dashboard',
-            [RegistrarController::class,'dashboard']
+            [RegistrarController::class, 'dashboard']
         );
+
 
         /*
         |--------------------------------------------------------------------------
@@ -231,64 +295,75 @@ Route::middleware('auth:sanctum')->group(function(){
 
         Route::get(
             '/enrollments',
-            [RegistrarController::class,'index']
+            [RegistrarController::class, 'index']
         );
 
         Route::get(
             '/enrollment/{id}',
-            [RegistrarController::class,'show']
+            [RegistrarController::class, 'show']
         );
 
+
+        /*
+        | Paid → Processing
+        */
+
         Route::put(
-            '/enrollment/{id}/approve',
-            [RegistrarController::class,'approve']
+            '/enrollment/{id}/process',
+            [RegistrarController::class, 'process']
         );
+
+
+        /*
+        | Processing → Completed
+        */
+
+        Route::put(
+            '/enrollment/{id}/complete',
+            [RegistrarController::class, 'complete']
+        );
+
+
+        /*
+        | Pending / Paid / Processing → Rejected
+        */
 
         Route::put(
             '/enrollment/{id}/reject',
-            [RegistrarController::class,'reject']
+            [RegistrarController::class, 'reject']
         );
+
 
         /*
         |--------------------------------------------------------------------------
-        | Curriculum Management
+        | Promissory Document Requirements
         |--------------------------------------------------------------------------
         */
 
         Route::get(
-            '/curriculum/courses',
-            [CurriculumController::class,'courses']
+            '/enrollment/{enrollmentId}/document-requirements',
+            [
+                EnrollmentDocumentRequirementController::class,
+                'index'
+            ]
         );
 
-        Route::get(
-            '/curriculum/subjects/all',
-            [CurriculumController::class,'allSubjects']
+        Route::put(
+            '/document-requirement/{id}/approve',
+            [
+                EnrollmentDocumentRequirementController::class,
+                'approve'
+            ]
         );
 
-        Route::get(
-            '/curriculum',
-            [CurriculumController::class,'index']
+        Route::put(
+            '/document-requirement/{id}/reject',
+            [
+                EnrollmentDocumentRequirementController::class,
+                'reject'
+            ]
         );
 
-        Route::get(
-            '/curriculum/{id}',
-            [CurriculumController::class,'show']
-        );
-
-        Route::get(
-            '/curriculum/{id}/subjects',
-            [CurriculumController::class,'subjects']
-        );
-
-        Route::post(
-            '/curriculum/{id}/subjects',
-            [CurriculumController::class,'addSubject']
-        );
-
-        Route::delete(
-            '/curriculum-subject/{id}',
-            [CurriculumController::class,'removeSubject']
-        );
 
         /*
         |--------------------------------------------------------------------------
@@ -298,29 +373,29 @@ Route::middleware('auth:sanctum')->group(function(){
 
         Route::get(
             '/reports',
-            [RegistrarReportController::class,'index']
+            [RegistrarReportController::class, 'index']
         );
 
-        // ADDED: Student Masterlist
         Route::get(
             '/reports/students',
-            [RegistrarReportController::class,'students']
+            [RegistrarReportController::class, 'students']
         );
 
         Route::get(
             '/reports/enrollment',
-            [RegistrarReportController::class,'enrollmentReport']
+            [RegistrarReportController::class, 'enrollmentReport']
         );
 
         Route::get(
             '/reports/course',
-            [RegistrarReportController::class,'courseReport']
+            [RegistrarReportController::class, 'courseReport']
         );
 
         Route::get(
             '/reports/assessment',
-            [RegistrarReportController::class,'assessmentReport']
+            [RegistrarReportController::class, 'assessmentReport']
         );
+
 
         /*
         |--------------------------------------------------------------------------
@@ -330,86 +405,126 @@ Route::middleware('auth:sanctum')->group(function(){
 
         Route::get(
             '/academic-years',
-            [SchoolYearController::class,'index']
+            [SchoolYearController::class, 'index']
         );
 
         Route::get(
             '/academic-years/active',
-            [SchoolYearController::class,'active']
+            [SchoolYearController::class, 'active']
         );
 
         Route::post(
             '/academic-years/{id}/activate',
-            [SchoolYearController::class,'activate']
+            [SchoolYearController::class, 'activate']
         );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Semesters
+        |--------------------------------------------------------------------------
+        */
 
         Route::get(
             '/semesters',
-            [SemesterController::class,'index']
+            [SemesterController::class, 'index']
         );
 
         Route::get(
             '/semesters/active',
-            [SemesterController::class,'active']
+            [SemesterController::class, 'active']
         );
 
         Route::post(
             '/semesters/{id}/activate',
-            [SemesterController::class,'activate']
+            [SemesterController::class, 'activate']
         );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Active Academic Period
+        |--------------------------------------------------------------------------
+        */
 
         Route::get(
             '/active-period',
-            [AcademicPeriodController::class,'active']
+            [AcademicPeriodController::class, 'active']
         );
 
         Route::post(
             '/active-period',
-            [AcademicPeriodController::class,'setActive']
+            [AcademicPeriodController::class, 'setActive']
+        );
+
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cashier
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('cashier')->group(function () {
+
+        /*
+        |--------------------------------------------------------------------------
+        | Dashboard
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/dashboard',
+            [CashierController::class, 'dashboard']
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Payments
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/payments',
+            [CashierController::class, 'payments']
+        );
+
+        Route::get(
+            '/payments/{id}',
+            [CashierController::class, 'showPayment']
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Receipts
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/receipts',
+            [CashierController::class, 'receipts']
+        );
+
+        Route::get(
+            '/receipts/{id}',
+            [CashierController::class, 'receipt']
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Reports
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/reports',
+            [CashierController::class, 'reports']
         );
 
     });
 
 });
-
-/*
-|--------------------------------------------------------------------------
-| Cashier
-|--------------------------------------------------------------------------
-*/
-
-Route::middleware('auth:sanctum')
-    ->prefix('cashier')
-    ->group(function(){
-
-        Route::get(
-            '/dashboard',
-            [CashierController::class,'dashboard']
-        );
-
-        Route::get(
-            '/payments',
-            [CashierController::class,'payments']
-        );
-
-        Route::get(
-            '/payments/{id}',
-            [CashierController::class,'showPayment']
-        );
-
-        Route::get(
-            '/receipts',
-            [CashierController::class,'receipts']
-        );
-
-        Route::get(
-            '/receipts/{id}',
-            [CashierController::class,'receipt']
-        );
-
-        Route::get(
-            '/reports',
-            [CashierController::class,'reports']
-        );
-
-    });

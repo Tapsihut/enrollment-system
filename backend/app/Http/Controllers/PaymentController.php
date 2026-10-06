@@ -99,10 +99,8 @@ class PaymentController extends Controller
                             ],
 
 
-                            "success_url"=>"http://localhost:5173/student/payment/success",
-
-
-                            "cancel_url"=>"http://localhost:5173/student/payment/failed"
+                        'success_url' => 'http://192.168.1.3:5173/student/payment/success',
+                        'cancel_url' => 'http://192.168.1.3:5173/student/payment/failed'
 
 
 

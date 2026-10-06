@@ -5,10 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Enrollment;
-use App\Models\Guardian;
-use App\Models\AcademicBackground;
-use App\Models\CurriculumSubject;
-use App\Models\EnrollmentSubject;
 
 class RegistrarController extends Controller
 {
@@ -24,6 +20,7 @@ class RegistrarController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
+
             $query->whereHas('student', function ($q) use ($search) {
                 $q->where('id', 'like', "%{$search}%")
                     ->orWhere('first_name', 'like', "%{$search}%")
@@ -37,6 +34,7 @@ class RegistrarController extends Controller
 
         if ($request->filled('course')) {
             $course = $request->course;
+
             $query->whereHas('course', function ($q) use ($course) {
                 $q->where('name', $course);
             });
@@ -47,11 +45,18 @@ class RegistrarController extends Controller
         }
 
         $sort = $request->get('sort', 'desc');
+
+        if (!in_array($sort, ['asc', 'desc'])) {
+            $sort = 'desc';
+        }
+
         $query->orderBy('created_at', $sort);
 
-        $perPage = $request->get('per_page', 10);
+        $perPage = min((int) $request->get('per_page', 10), 100);
 
-        return response()->json($query->paginate($perPage));
+        return response()->json(
+            $query->paginate($perPage)
+        );
     }
 
     public function show($id)
@@ -64,12 +69,9 @@ class RegistrarController extends Controller
             'schoolYear',
             'semester',
             'academicBackground',
-            'documents'
+            'documents',
+            'payment'
         ])->findOrFail($id);
-
-        $enrollmentSubjects = EnrollmentSubject::with(['subject'])
-            ->where('enrollment_id', $enrollment->id)
-            ->get();
 
         return response()->json([
             'id' => $enrollment->id,
@@ -86,57 +88,44 @@ class RegistrarController extends Controller
             'academicBackground' => $enrollment->academicBackground,
             'documents' => $enrollment->documents,
             'year_level' => $enrollment->year_level,
-            'enrollmentSubjects' => $enrollmentSubjects
+            'payment' => $enrollment->payment
         ]);
     }
 
-    public function approve($id)
-    {
-        $enrollment = Enrollment::with('semester')->findOrFail($id);
+    /*
+    |--------------------------------------------------------------------------
+    | Paid → Processing
+    |--------------------------------------------------------------------------
+    */
 
-        if ($enrollment->status !== 'Pending') {
+    public function process($id)
+    {
+        $enrollment = Enrollment::findOrFail($id);
+
+        if ($enrollment->status !== 'Paid') {
             return response()->json([
                 'success' => false,
-                'message' => 'Only pending enrollment applications can be approved.'
+                'message' => 'Only paid enrollments can be processed.'
             ], 422);
         }
 
-        $enrollment->status = 'Approved';
+        $enrollment->status = 'Processing';
         $enrollment->rejection_reason = null;
         $enrollment->rejected_at = null;
         $enrollment->save();
 
-        $semester = $enrollment->semester_id;
-
-        $subjects = CurriculumSubject::where(
-            'curriculum_id',
-            $enrollment->curriculum_id
-        )->where(
-            'year_level',
-            $enrollment->year_level
-        )->where(
-            'semester',
-            $semester
-        )->get();
-
-        foreach ($subjects as $subject) {
-            EnrollmentSubject::updateOrCreate(
-                [
-                    'enrollment_id' => $enrollment->id,
-                    'subject_id' => $subject->subject_id
-                ],
-                [
-                    'units' => $subject->subject->units
-                ]
-            );
-        }
-
         return response()->json([
             'success' => true,
-            'message' => 'Enrollment approved and subjects assigned successfully.',
-            'subjects_assigned' => $subjects->count()
+            'message' => 'Enrollment is now being processed.',
+            'enrollment' => $enrollment
         ]);
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pending / Paid / Processing → Rejected
+    |--------------------------------------------------------------------------
+    */
 
     public function reject(Request $request, $id)
     {
@@ -153,10 +142,14 @@ class RegistrarController extends Controller
 
         $enrollment = Enrollment::findOrFail($id);
 
-        if ($enrollment->status !== 'Pending') {
+        if (!in_array($enrollment->status, [
+            'Pending',
+            'Paid',
+            'Processing'
+        ])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Only pending enrollment applications can be rejected.'
+                'message' => 'This enrollment cannot be rejected in its current status.'
             ], 422);
         }
 
@@ -172,21 +165,87 @@ class RegistrarController extends Controller
         ]);
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Processing → Completed
+    |--------------------------------------------------------------------------
+    */
+
+    public function complete($id)
+    {
+        $enrollment = Enrollment::findOrFail($id);
+
+        if ($enrollment->status !== 'Processing') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only enrollments currently being processed can be completed.'
+            ], 422);
+        }
+
+        $enrollment->status = 'Completed';
+        $enrollment->rejection_reason = null;
+        $enrollment->rejected_at = null;
+        $enrollment->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Enrollment completed successfully.',
+            'enrollment' => $enrollment
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard
+    |--------------------------------------------------------------------------
+    */
+
     public function dashboard()
     {
         return response()->json([
             'statistics' => [
                 'total' => Enrollment::count(),
-                'pending' => Enrollment::where('status', 'Pending')->count(),
-                'approved' => Enrollment::where('status', 'Approved')->count(),
-                'rejected' => Enrollment::where('status', 'Rejected')->count(),
-                'payment' => Enrollment::where('status', 'Approved')->count(),
-                'today' => Enrollment::whereDate('created_at', today())->count(),
+
+                'pending' => Enrollment::where(
+                    'status',
+                    'Pending'
+                )->count(),
+
+                'paid' => Enrollment::where(
+                    'status',
+                    'Paid'
+                )->count(),
+
+                'processing' => Enrollment::where(
+                    'status',
+                    'Processing'
+                )->count(),
+
+                'rejected' => Enrollment::where(
+                    'status',
+                    'Rejected'
+                )->count(),
+
+                'completed' => Enrollment::where(
+                    'status',
+                    'Completed'
+                )->count(),
+
+                'today' => Enrollment::whereDate(
+                    'created_at',
+                    today()
+                )->count(),
             ],
+
             'recent' => Enrollment::with([
                 'student',
-                'course'
-            ])->latest()->take(5)->get(),
+                'course',
+                'payment'
+            ])
+                ->latest()
+                ->take(5)
+                ->get(),
+
             'updated_at' => now()->format('h:i:s A')
         ]);
     }
