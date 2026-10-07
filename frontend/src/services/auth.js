@@ -32,7 +32,19 @@ export default {
     },
 
     register(data) {
-        return API.post("/register", data)
+
+        const body = new URLSearchParams()
+
+        body.append("name", data.name)
+        body.append("email", data.email)
+        body.append("password", data.password)
+
+        return API.post("/register", body, {
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/x-www-form-urlencoded",
+            }
+        })
     },
 
     logout() {
@@ -44,4 +56,3 @@ export default {
     }
 
 }
-
