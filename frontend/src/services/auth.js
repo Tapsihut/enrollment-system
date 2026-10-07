@@ -1,15 +1,14 @@
 import axios from "axios"
 
 const API = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || "https://sfxc-enrollment.free.nf/api",
+    baseURL: import.meta.env.VITE_API_URL,
 
     headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
-    }
+    },
 })
 
-// Attach token automatically
 API.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem("token")
@@ -32,19 +31,7 @@ export default {
     },
 
     register(data) {
-
-        const body = new URLSearchParams()
-
-        body.append("name", data.name)
-        body.append("email", data.email)
-        body.append("password", data.password)
-
-        return API.post("/register", body, {
-            headers: {
-                Accept: "application/json",
-                "Content-Type": "application/x-www-form-urlencoded",
-            }
-        })
+        return API.post("/register", data)
     },
 
     logout() {
